@@ -1,0 +1,185 @@
+/* Core Styling - Mobile First */
+:root {
+    --primary-color: #FFC107; /* Mario Yellow */
+    --accent-color: #2196F3;
+    --background-color: #f0f0f0;
+    --header-color: #333;
+    --text-on-header: #fff;
+    --nav-color: #222;
+    --text-on-nav: #ddd;
+    --header-height: 56px;
+    --bottom-nav-height: 120px;
+    --touch-size-min: 44px;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--background-color);
+    overscroll-behavior: none; /* Prevents pull-to-refresh */
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header */
+.app-header {
+    height: var(--header-height);
+    background-color: var(--header-color);
+    color: var(--text-on-header);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+}
+
+.logo {
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.logo-version {
+    font-size: 0.8rem;
+    color: #bbb;
+}
+
+.menu-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    width: var(--touch-size-min);
+    height: var(--touch-size-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Content (3D Render Area) */
+.app-content {
+    flex: 1;
+    margin-top: var(--header-height);
+    margin-bottom: var(--bottom-nav-height);
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+#render-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* Bottom Nav */
+.app-bottom-nav {
+    height: var(--bottom-nav-height);
+    background-color: var(--nav-color);
+    color: var(--text-on-nav);
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.2);
+}
+
+.toolbar-top {
+    height: 30px;
+    background-color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #444;
+}
+
+#selected-object-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #aaa;
+}
+
+.object-selector {
+    height: 50px;
+    overflow-x: auto;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 10px;
+    background-color: #1a1a1a;
+}
+
+.object-item {
+    width: 40px;
+    height: 40px;
+    background-color: #333;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+    font-size: 1.5rem;
+    touch-action: manipulation;
+    flex-shrink: 0;
+}
+
+.object-item:active {
+    background-color: #444;
+}
+
+.object-item.selected {
+    border-color: var(--primary-color);
+}
+
+.main-actions {
+    height: 40px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-on-nav);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    touch-action: manipulation;
+}
+
+.nav-item.active {
+    color: var(--primary-color);
+}
+
+.nav-item .icon {
+    font-size: 1.2rem;
+}
+
+.nav-item .label {
+    font-size: 0.7rem;
+}
+
+/* Three.js canvas should be touch-friendly */
+#render-container canvas {
+    touch-action: none;
+}
