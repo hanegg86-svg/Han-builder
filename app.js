@@ -1,4 +1,5 @@
 // Logic Layer (App) - Orchestrates PWA, UI, Data, and Engine
+import * as THREE from 'three';
 import { engine } from './engine.js';
 import { OBJECT_DEFINITIONS, addObjectToCity, cityState, clearCityState, charactersState, addCharacterState } from './data.js';
 
