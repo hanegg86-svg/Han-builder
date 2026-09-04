@@ -1,65 +1,85 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Super Kingdom Builder (Mobile)</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#FFC107">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SKB Mobile">
-    <link rel="apple-touch-icon" href="icon-192.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pocket 3D Modeler</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#121212">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <link rel="stylesheet" href="styles.css">
-    
-    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
-    <script type="importmap">
+  <script type="importmap">
     {
-        "imports": {
-            "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
-        }
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
     }
-    </script>
+  </script>
 </head>
 <body>
-
-    <header class="app-header">
-        <div class="logo">
-            <span class="logo-title">SUPER Modular Kingdom Builder</span>
-            <span class="logo-version">v0.1 Mobile</span>
-        </div>
-        <button class="menu-btn" aria-label="Menu">☰</button>
+  <div id="app">
+    <header class="top-bar">
+      <div class="brand">Pocket 3D</div>
+      <div class="top-actions">
+        <button id="btn-clear" class="btn-icon" title="Clear Scene">🗑️</button>
+        <button id="btn-export-glb" class="btn-primary">GLB</button>
+        <button id="btn-export-obj" class="btn-secondary">OBJ</button>
+      </div>
     </header>
 
-    <main class="app-content">
-        <div id="render-container"></div>
-    </main>
+    <div id="canvas-container"></div>
 
-    <nav class="app-bottom-nav">
-        <div class="toolbar-top">
-            <div id="selected-object-label">เลือกวัตถุเพื่อสร้าง</div>
+    <div id="bottom-sheet" class="bottom-sheet">
+      <div class="sheet-handle" id="sheet-toggle"></div>
+      <div class="sheet-content">
+        <div class="sheet-row">
+          <span class="label">โหมด Gizmo</span>
+          <div class="segmented-control">
+            <button class="seg-btn active" data-mode="translate">ย้าย</button>
+            <button class="seg-btn" data-mode="rotate">หมุน</button>
+            <button class="seg-btn" data-mode="scale">ย่อ/ขยาย</button>
+          </div>
         </div>
-        <div class="object-selector" id="object-selector-container">
-            </div>
-        <div class="main-actions">
-            <button class="nav-item active" data-action="build" aria-label="Build Mode">
-                <span class="icon">🏗️</span>
-                <span class="label">สร้าง</span>
-            </button>
-            <button class="nav-item" data-action="play" aria-label="Play Mode">
-                <span class="icon">🕹️</span>
-                <span class="label">เล่น</span>
-            </button>
-            <button class="nav-item" data-action="clear" aria-label="Clear City">
-                <span class="icon">🗑️</span>
-                <span class="label">ล้าง</span>
-            </button>
+
+        <div class="sheet-row">
+          <span class="label">สีวัตถุ</span>
+          <input type="color" id="mat-color" value="#4f46e5">
         </div>
+
+        <div class="sheet-row">
+          <span class="label">ความเงา (Roughness)</span>
+          <input type="range" id="mat-roughness" min="0" max="1" step="0.05" value="0.4">
+        </div>
+
+        <div class="sheet-row">
+          <button id="btn-delete" class="btn-danger">ลบวัตถุที่เลือก</button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="bottom-bar">
+      <button class="action-btn" id="btn-add-cube">
+        <span class="icon">📦</span>
+        <span class="text">Cube</span>
+      </button>
+      <button class="action-btn" id="btn-add-sphere">
+        <span class="icon">⚪</span>
+        <span class="text">Sphere</span>
+      </button>
+      <button class="action-btn" id="btn-add-cylinder">
+        <span class="icon">🥫</span>
+        <span class="text">Cylinder</span>
+      </button>
+      <button class="action-btn" id="btn-snap-grid">
+        <span class="icon">🧲</span>
+        <span class="text">Snap Grid</span>
+      </button>
     </nav>
+  </div>
 
-    <script type="module" src="app.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
