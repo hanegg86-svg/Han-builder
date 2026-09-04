@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pocket3d-cache-v1';
+const CACHE_NAME = 'pocket3d-cache-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -26,7 +26,19 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+
   e.respondWith(
-    caches.match(e.request).then((res) => res || fetch(e.request))
+    fetch(e.request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
+          });
+        }
+        return response;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
