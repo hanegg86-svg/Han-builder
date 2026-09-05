@@ -52,6 +52,7 @@
     }
     input[type="password"],
     input[type="text"],
+    input[type="file"],
     textarea {
       width: 100%;
       padding: 10px;
@@ -62,8 +63,12 @@
       font-size: 14px;
       line-height: 1.5;
     }
+    input[type="file"] {
+      padding: 8px;
+      cursor: pointer;
+    }
     textarea {
-      height: 95px;
+      height: 85px;
       resize: vertical;
     }
     button {
@@ -140,7 +145,8 @@
       min-height: 250px;
       background-color: #111111;
     }
-    #preview-container {
+    #preview-container,
+    #uploaded-preview-container {
       display: none;
       flex-direction: column;
       gap: 10px;
@@ -149,14 +155,23 @@
       border-radius: 6px;
       border: 1px solid #333;
     }
-    #preview-image {
+    #preview-image,
+    #uploaded-image-preview {
       width: 100%;
       height: auto;
-      max-height: 180px;
+      max-height: 160px;
       object-fit: contain;
       background: #141414;
       border-radius: 4px;
       border: 1px solid #444;
+    }
+    #remove-image-btn {
+      background: #dc2626;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    #remove-image-btn:hover {
+      background: #b91c1c;
     }
 
     /* ปุ่มสลับโหมดสัมผัส 3D */
@@ -207,6 +222,7 @@
       }
       input[type="password"],
       input[type="text"],
+      input[type="file"],
       textarea {
         font-size: 16px;
       }
@@ -238,11 +254,23 @@
       data-testid="api-key-input" 
       placeholder="ใส่ Gemini API Key ที่นี่" />
 
-    <label for="prompt-input">คำอธิบายโมเดล 3D:</label>
+    <label for="image-input">อัปโหลดรูปภาพ 2D (ตัวเลือกเสริม):</label>
+    <input 
+      type="file" 
+      id="image-input" 
+      data-testid="image-input" 
+      accept="image/*" />
+
+    <div id="uploaded-preview-container">
+      <img id="uploaded-image-preview" alt="Uploaded Preview" />
+      <button id="remove-image-btn" type="button">❌ ลบรูปภาพที่เลือก</button>
+    </div>
+
+    <label for="prompt-input">คำอธิบายโมเดล 3D (หรือรายละเอียดเพิ่มเติม):</label>
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: สร้างโต๊ะไม้ 4 ขา หรือ ถ้วยกาแฟทรงกระบอก"></textarea>
+      placeholder="ตัวอย่าง: ถ้วยกาแฟทรงกระบอก หรือ หากอัปโหลดรูป ให้ระบุรายละเอียดเพิ่มเติมที่ต้องการ"></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
@@ -365,7 +393,7 @@
       controls.update();
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec
+    // 4. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec ที่รองรับรูปทรงซับซ้อน
     function renderModel(spec) {
       while (modelGroup.children.length > 0) {
         const obj = modelGroup.children[0];
@@ -408,6 +436,39 @@
             p.radialSegments || 16,
             p.tubularSegments || 32
           );
+        } else if (item.type === 'capsule') {
+          geometry = new THREE.CapsuleGeometry(
+            p.radius || 0.5,
+            p.length || 1,
+            p.capSubdivisions || 8,
+            p.radialSegments || 16
+          );
+        } else if (item.type === 'lathe') {
+          const rawPoints = (p.points && Array.isArray(p.points) && p.points.length > 1) ? p.points : [[0, 0], [0.5, 0.5], [0.3, 1], [0, 1]];
+          const points = rawPoints.map(pt => new THREE.Vector2(Math.max(0, pt[0]), pt[1]));
+          geometry = new THREE.LatheGeometry(points, p.segments || 32);
+        } else if (item.type === 'extrude') {
+          const shape = new THREE.Shape();
+          const pts = (p.shape && Array.isArray(p.shape) && p.shape.length >= 3) ? p.shape : [[0, 0], [1, 0], [0.5, 1]];
+          shape.moveTo(pts[0][0], pts[0][1]);
+          for (let i = 1; i < pts.length; i++) {
+            shape.lineTo(pts[i][0], pts[i][1]);
+          }
+          shape.closePath();
+
+          const extrudeSettings = {
+            depth: p.depth !== undefined ? p.depth : 0.5,
+            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
+            bevelSegments: p.bevelSegments || 2,
+            steps: 1,
+            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.04,
+            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.04
+          };
+          geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        } else if (item.type === 'dodecahedron') {
+          geometry = new THREE.DodecahedronGeometry(p.radius || 0.5, p.detail || 0);
+        } else if (item.type === 'icosahedron') {
+          geometry = new THREE.IcosahedronGeometry(p.radius || 0.5, p.detail || 0);
         }
 
         if (geometry) {
@@ -418,8 +479,10 @@
           });
 
           const mesh = new THREE.Mesh(geometry, material);
-          if (item.position) mesh.position.set(...item.position);
-          if (item.rotation) mesh.rotation.set(...item.rotation);
+          if (item.position && Array.isArray(item.position)) mesh.position.set(...item.position);
+          if (item.rotation && Array.isArray(item.rotation)) mesh.rotation.set(...item.rotation);
+          if (item.scale && Array.isArray(item.scale)) mesh.scale.set(...item.scale);
+          
           mesh.castShadow = true;
           mesh.receiveShadow = true;
           modelGroup.add(mesh);
@@ -441,12 +504,19 @@
 
     // 5. จัดการ Element และการเชื่อมต่อ Gemini API
     const apiKeyInput = document.getElementById('api-key-input');
+    const imageInput = document.getElementById('image-input');
+    const uploadedPreviewContainer = document.getElementById('uploaded-preview-container');
+    const uploadedImagePreview = document.getElementById('uploaded-image-preview');
+    const removeImageBtn = document.getElementById('remove-image-btn');
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
     const exportBtn = document.getElementById('export-glb-btn');
     const appStatus = document.getElementById('app-status');
     const downloadLink = document.getElementById('download-link');
     const previewContainer = document.getElementById('preview-container');
+
+    let currentImageBase64 = null;
+    let currentImageMimeType = null;
 
     const savedApiKey = localStorage.getItem('gemini_api_key');
     if (savedApiKey) {
@@ -457,34 +527,73 @@
       localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
     });
 
+    imageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target.result;
+        uploadedImagePreview.src = result;
+        uploadedPreviewContainer.style.display = 'flex';
+
+        const match = result.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        if (match) {
+          currentImageMimeType = match[1];
+          currentImageBase64 = match[2];
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    removeImageBtn.addEventListener('click', () => {
+      imageInput.value = '';
+      currentImageBase64 = null;
+      currentImageMimeType = null;
+      uploadedPreviewContainer.style.display = 'none';
+      uploadedImagePreview.src = '';
+    });
+
     function setStatus(state, message) {
       appStatus.setAttribute('data-status', state);
       appStatus.textContent = `Status: ${message}`;
     }
 
     const SYSTEM_PROMPT = `
-You are a 3D procedural modeling engine. Convert the user's natural language request into a precise 3D primitive layout.
+You are an advanced 3D procedural modeling engine. Convert the user's natural language request and/or 2D image into a precise 3D primitive layout.
 You MUST output ONLY a valid JSON object matching this schema:
 {
   "objects": [
     {
-      "type": "box" | "cylinder" | "sphere" | "cone" | "torus",
+      "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "dodecahedron" | "icosahedron",
       "parameters": {
         // for box: "width": float, "height": float, "depth": float
         // for cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
         // for sphere: "radius": float, "widthSegments": int, "heightSegments": int
         // for cone: "radius": float, "height": float, "radialSegments": int
         // for torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
+        // for capsule: "radius": float, "length": float
+        // for lathe: "points": [[x, y], ...], "segments": int (rotational profile around Y axis, x >= 0)
+        // for extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool, "bevelThickness": float, "bevelSize": float
+        // for dodecahedron / icosahedron: "radius": float
       },
       "position": [x, y, z],
       "rotation": [rotX_radians, rotY_radians, rotZ_radians],
+      "scale": [scaleX, scaleY, scaleZ], // optional, default [1, 1, 1]
       "color": "#hexcode",
       "metalness": float_0_to_1,
       "roughness": float_0_to_1
     }
   ]
 }
-Ensure objects rest naturally relative to ground level (Y = 0) or stack logically.
+
+Guidelines for high fidelity:
+- When a 2D image is provided, analyze its silhouette, contours, symmetrical parts, and colors carefully.
+- For rotational symmetric items (vases, cups, wine glasses, bottles, chess pieces, bowls), use "lathe". Points define the 2D cross-section curve in XY plane where x >= 0 is radius and y is height.
+- For 2D profile shapes with depth (stars, blades, shields, letters, logos), use "extrude".
+- For limbs, organic links, joints, capsules, or rounded rods, use "capsule".
+- Use non-uniform "scale" (e.g. [1, 0.2, 1] on sphere for a disc/patty) to shape objects accurately.
+- Ensure objects rest naturally relative to ground level (Y = 0) or stack logically.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -496,8 +605,8 @@ Ensure objects rest naturally relative to ground level (Y = 0) or stack logicall
         return;
       }
 
-      if (!prompt) {
-        setStatus('error', 'กรุณาระบุคำอธิบายโมเดล 3D');
+      if (!prompt && !currentImageBase64) {
+        setStatus('error', 'กรุณาระบุคำอธิบายโมเดล 3D หรืออัปโหลดรูปภาพ 2D');
         return;
       }
 
@@ -509,6 +618,19 @@ Ensure objects rest naturally relative to ground level (Y = 0) or stack logicall
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
 
+      const parts = [];
+      if (currentImageBase64) {
+        parts.push({
+          inline_data: {
+            mime_type: currentImageMimeType || 'image/jpeg',
+            data: currentImageBase64
+          }
+        });
+      }
+
+      const userText = prompt || 'วิเคราะห์รูปภาพนี้แล้วสร้างเป็นโมเดล 3D ตามโครงสร้างที่กำหนด';
+      parts.push({ text: userText });
+
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -516,7 +638,7 @@ Ensure objects rest naturally relative to ground level (Y = 0) or stack logicall
           body: JSON.stringify({
             contents: [
               {
-                parts: [{ text: prompt }]
+                parts: parts
               }
             ],
             systemInstruction: {
