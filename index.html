@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agent 3D Builder</title>
+
+  <!-- PWA & Mobile Web App Settings -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a1a1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="3D Builder">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
   <style>
     * {
       box-sizing: border-box;
@@ -198,7 +208,7 @@
       input[type="password"],
       input[type="text"],
       textarea {
-        font-size: 16px; /* ป้องกันเบราว์เซอร์มือถือเด้ง Auto-Zoom */
+        font-size: 16px;
       }
     }
   </style>
@@ -257,7 +267,20 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
-    // 1. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer สำหรับบันทึกภาพ
+    // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((registration) => {
+            console.log('ServiceWorker registered with scope:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('ServiceWorker registration failed:', error);
+          });
+      });
+    }
+
+    // 2. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer สำหรับบันทึกภาพ
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -273,7 +296,6 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // จัดการระบบสลับโหมดล็อกการหมุน 3D
     const touchToggleBtn = document.getElementById('touch-toggle-btn');
     let isTouchLocked = false;
 
@@ -325,7 +347,7 @@
     }
     animate();
 
-    // 2. ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ
+    // 3. ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ
     function fitCameraToObject(object) {
       const box = new THREE.Box3().setFromObject(object);
       if (box.isEmpty()) return;
@@ -343,7 +365,7 @@
       controls.update();
     }
 
-    // 3. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec
+    // 4. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec
     function renderModel(spec) {
       while (modelGroup.children.length > 0) {
         const obj = modelGroup.children[0];
@@ -404,11 +426,9 @@
         }
       });
 
-      // จัดกล้องและเรนเดอร์ภาพนิ่ง
       fitCameraToObject(modelGroup);
       renderer.render(scene, camera);
 
-      // สร้างรูปพรีวิว 2D (.png)
       const dataUrl = renderer.domElement.toDataURL('image/png');
       const previewContainer = document.getElementById('preview-container');
       const previewImg = document.getElementById('preview-image');
@@ -419,7 +439,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 4. จัดการ Element และการเชื่อมต่อ Gemini API
+    // 5. จัดการ Element และการเชื่อมต่อ Gemini API
     const apiKeyInput = document.getElementById('api-key-input');
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
