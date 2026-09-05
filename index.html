@@ -270,7 +270,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: ไดโนเสาร์การ์ตูนสีเขียวถือไข่ลายจุด หรือ รายละเอียดเพิ่มเติม"></textarea>
+      placeholder="ตัวอย่าง: มาริโอ้วิ่ง หมวกแดง เอี๊ยมน้ำเงิน จมูกโต หนวดดำ หรือ รายละเอียดเพิ่มเติม"></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
@@ -340,13 +340,19 @@
       }
     });
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // ปรับปรุงระบบแสง: เพิ่มแสงรอบทิศทาง และ Front Fill Light ลบเงาใต้หมวก/ใบหน้า
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(10, 15, 10);
     dirLight.castShadow = true;
     scene.add(dirLight);
+
+    // Fill Light ส่องตรงจากด้านหน้า เพื่อให้รายละเอียดใบหน้า ตา หนวด สว่างชัดเจน
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    fillLight.position.set(0, 3, 10);
+    scene.add(fillLight);
 
     const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
     scene.add(gridHelper);
@@ -474,8 +480,8 @@
         if (geometry) {
           const material = new THREE.MeshStandardMaterial({
             color: item.color || '#cccccc',
-            metalness: item.metalness !== undefined ? item.metalness : 0.2,
-            roughness: item.roughness !== undefined ? item.roughness : 0.5
+            metalness: item.metalness !== undefined ? item.metalness : 0.1,
+            roughness: item.roughness !== undefined ? item.roughness : 0.6
           });
 
           const mesh = new THREE.Mesh(geometry, material);
@@ -560,7 +566,7 @@
     }
 
     const SYSTEM_PROMPT = `
-You are an expert procedural 3D modeler. Convert the user's natural language request and/or 2D image into an expressive, highly detailed 3D composition using 30 to 55 primitives.
+You are an expert master 3D procedural character artist. Convert the user's request and 2D image into an expressive, recognizable 3D character using 40 to 65 primitives.
 You MUST output ONLY a valid JSON object matching this schema:
 {
   "objects": [
@@ -573,7 +579,7 @@ You MUST output ONLY a valid JSON object matching this schema:
         // for cone: "radius": float, "height": float, "radialSegments": int
         // for torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
         // for capsule: "radius": float, "length": float
-        // for lathe: "points": [[x, y], ...], "segments": int (rotational profile around Y axis, x >= 0)
+        // for lathe: "points": [[x, y], ...], "segments": int
         // for extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool, "bevelThickness": float, "bevelSize": float
         // for dodecahedron / icosahedron: "radius": float
       },
@@ -587,32 +593,34 @@ You MUST output ONLY a valid JSON object matching this schema:
   ]
 }
 
-CRITICAL RULES FOR HIGH FIDELITY REPRODUCTION:
-1. SNOUT & MUZZLE (Creatures/Dinosaurs/Animals):
-   - Characters like Yoshi have a large, forward-protruding rounded muzzle/snout. Do NOT place eyes on a flat surface!
-   - Build the head with multiple overlapping shapes:
-     * Upper head: sphere or capsule at the back/top.
-     * Big bulbous snout: large green sphere protruding forward in front of the eyes (positive Z).
-     * Lower jaw / cheeks / chin: white or cream-colored rounded shapes (spheres/cylinders) wrapping under and beside the snout.
-2. CARTOON EYES (Tall & Expressive):
-   - Place two large vertical cartoon eyes close together on top of the snout.
-   - Use elongated spheres (e.g. scale: [0.6, 1.2, 0.6]) for the white eye globes.
-   - Add black/colored pupils and small white highlight spots layered slightly forward (+Z) to create personality.
-3. SIGNATURE ACCESSORIES & BACK DETAILS:
-   - Always include distinctive rear features:
-     * Red/orange spine ridges / crests / spikes behind the head and neck.
-     * Shell / saddle: red rounded shape with white collar rim on the back (-Z).
-     * Tail: short pointed cone or capsule pointing backward (-Z).
-4. HELD PROPS & SURFACE PATTERNS (Eggs, Weapons, Items):
-   - If holding an egg (like Yoshi egg):
-     * Body of egg: white sphere elongated vertically (scale: [0.8, 1.1, 0.8]).
-     * Surface Spots: Place 4 to 6 thin, flat green discs/spheres (scale: [0.25, 0.25, 0.02]) directly onto the surface of the egg (front, left, right, top) tilted to align with the egg's curvature.
-   - Arms & Hands: Bendable arms using capsules, holding the prop from both sides with fingers/hands wrapping the object.
-5. SHOES & FEET:
-   - Create distinct stylized boots/shoes with a thick brown/orange sole (box or flat cylinder) and a bulbous colored shoe body.
-6. PRIMITIVE COUNT TARGET:
-   - Allocate 35 to 55 primitives to capture every layer: head, muzzle, cheeks, eyes, pupils, spikes, shell, torso, belly patch, arms, hands, prop, prop decals, legs, boots, and tail.
-   - Ensure all pieces connect tightly without unwanted floating gaps.
+STRICT ARCHITECTURAL RULES FOR RECOGNIZABLE CHARACTERS:
+1. HEAD, CAP & FACIAL Z-STACKING (PREVENT CLIPPING):
+   - Face Base: Spherical/oval head (#fed0b3 or skin tone).
+   - Cap / Hat:
+     * Main cap dome on top of head.
+     * Cap Visor / Brim: MUST be a distinct, flattened oval or tilted box positioned below the cap front and tilted slightly downward (pitch rotation X ~ 0.2 - 0.4 rad), protruding outward (+Z) in front of the forehead.
+     * Cap Emblem / Badge: Thin white disc in front center of cap.
+   - NOSE (THE MOST PROMINENT FEATURE):
+     * A large bulbous sphere (#f7bda0 or skin tone) placed WAY FORWARD (+Z) so it completely sits in front of the face and under the visor.
+   - MUSTACHE:
+     * Dark brown/black (#2b1810) curved structure placed immediately under the nose, resting across the mouth area, extended forward so it does not drown into the head mesh. Use 2 to 4 capsules/boxes or a scaled torus segment.
+   - EYES & EYEBROWS:
+     * Tall oval whites (scale [0.4, 0.7, 0.1]), blue/brown irises, black pupils placed on the face surface just above the nose.
+   - EARS & HAIR:
+     * Brown hair tufts/sideburns peeking out under the cap sides and back. Rounded ears on left and right (+-X).
+2. COSTUME & DETAILS:
+   - Red shirt: Torso base and red upper arms.
+   - Overalls: Blue body base (#0b4ea2) with two distinct blue straps rising over the shoulders.
+   - Yellow Buttons: Two distinct flat golden-yellow cylinders/discs (#ffd700) placed on the chest at the bottom of the straps (+Z offset).
+   - White Gloves: Spherical/capsule hands with white cuff rings around wrists.
+   - Shoes: Brown work boots (#5c2c16) with distinct sole pads at bottom.
+3. DYNAMIC POSE & ARTICULATION (VITAL):
+   - Do NOT make a static T-pose if the image shows action!
+   - Legs: If walking or running, rotate the hip/leg joints along the X-axis (one leg rotated forward, the other rotated backward) with bent knees/boots.
+   - Arms: Swing arms to match the gait (one arm raised forward bent at elbow, one arm swinging backward).
+   - Tilt the head slightly if the character looks energetic.
+4. PRIMITIVE BUDGET & SCALE:
+   - Use 40 to 65 primitives to capture every layer. Ensure pieces touch or overlap logically without ugly floating air gaps.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -647,7 +655,7 @@ CRITICAL RULES FOR HIGH FIDELITY REPRODUCTION:
         });
       }
 
-      const userText = prompt || 'วิเคราะห์ภาพนี้และถอดแบบเป็นโมเดล 3D อย่างละเอียดครบทุกชิ้นส่วน ทั้งรูปทรงหัว จมูกยื่น ตาการ์ตูน แผ่นหลัง หาง พร็อพ และลวดลายจุด';
+      const userText = prompt || 'วิเคราะห์ภาพตัวละครนี้และถอดแบบ 3D อย่างละเอียด: จัดวางปีกหมวก, จมูกโตยื่น, หนวดใต้จมูก, สายเอี๊ยม, กระดุมเหลือง และจัดท่าทางเดิน/วิ่งให้มีชีวิตชีวาตามรูป';
       parts.push({ text: userText });
 
       try {
