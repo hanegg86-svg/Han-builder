@@ -311,12 +311,12 @@
 
   <div id="canvas-container">
     <div id="viewport-controls">
-      <button class="tool-btn active" id="btn-translate" type="button"> Move (W)</button>
-      <button class="tool-btn" id="btn-rotate" type="button"> Rotate (E)</button>
-      <button class="tool-btn" id="btn-scale" type="button"> Scale (R)</button>
-      <button class="tool-btn" id="btn-motion" type="button"> Motion: ON</button>
+      <button class="tool-btn active" id="btn-translate" type="button">📍 Move (W)</button>
+      <button class="tool-btn" id="btn-rotate" type="button">🔄 Rotate (E)</button>
+      <button class="tool-btn" id="btn-scale" type="button">📐 Scale (R)</button>
+      <button class="tool-btn" id="btn-motion" type="button">🎬 Motion: ON</button>
     </div>
-    <button id="touch-toggle-btn" type="button">  3D ()</button>
+    <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
   </div>
 
   <div id="sidebar">
@@ -327,9 +327,9 @@
       type="password" 
       id="api-key-input" 
       data-testid="api-key-input" 
-      placeholder=" Gemini API Key " />
+      placeholder="ใส่ Gemini API Key ที่นี่" />
 
-    <label for="image-input"> 2D:</label>
+    <label for="image-input">อัปโหลดรูปภาพ 2D:</label>
     <input 
       type="file" 
       id="image-input" 
@@ -339,23 +339,23 @@
     <div id="uploaded-preview-container">
       <img id="uploaded-image-preview" alt="Uploaded Preview" />
       <div id="detected-palette"></div>
-      <button id="remove-image-btn" type="button"> </button>
+      <button id="remove-image-btn" type="button">❌ ลบรูปภาพที่เลือก</button>
     </div>
 
-    <label for="prompt-input">:</label>
+    <label for="prompt-input">คำอธิบายเพิ่มเติม:</label>
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder=":  Pin BFDI   "></textarea>
+      placeholder="ตัวอย่าง: หมุดปักกระดาษ Pin BFDI ฟิกเกอร์ไวนิลตัวหนา หรือ มาริโอ้วิ่ง"></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
     
     <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle</div>
 
-    <label> (Scene Outliner):</label>
+    <label>โครงสร้างชิ้นส่วนโมเดล (Scene Outliner):</label>
     <div id="outliner-panel">
-      <div style="font-size: 12px; color: #888;"></div>
+      <div style="font-size: 12px; color: #888;">ยังไม่มีชิ้นส่วนที่ถูกสร้าง</div>
     </div>
     
     <a id="download-link" data-testid="download-link" style="display: none;" download="model.glb">
@@ -363,7 +363,7 @@
     </a>
 
     <div id="preview-container">
-      <label> (Snapshot Image):</label>
+      <label>รูปภาพพรีวิว (Snapshot Image):</label>
       <img id="preview-image" data-testid="preview-image" alt="3D Model Preview" />
       <a id="download-image-btn" data-testid="download-image-btn" download="model-preview.png">
         Download Image (.png)
@@ -377,7 +377,7 @@
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
     import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-    // 1.  Service Worker  PWA
+    // 1. ลงทะเบียน Service Worker สำหรับ PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
@@ -386,7 +386,7 @@
       });
     }
 
-    // 2.  Three.js Scene, Camera, WebGLRenderer
+    // 2. ตั้งค่า Three.js Scene, Camera, WebGLRenderer
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -403,7 +403,7 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // TransformControls 
+    // TransformControls สำหรับคลิกลากปรับย้ายตำแหน่งชิ้นส่วน
     const transformControls = new TransformControls(camera, renderer.domElement);
     transformControls.size = 0.75;
     scene.add(transformControls);
@@ -412,7 +412,7 @@
       controls.enabled = !e.value;
     });
 
-    // Toon Gradient Texture 3  Cel-shading
+    // Toon Gradient Texture 3 ขั้นสำหรับ Cel-shading
     const colors = new Uint8Array([80, 175, 255]);
     const format = renderer.capabilities.isWebGL2 ? THREE.RedFormat : THREE.LuminanceFormat;
     const toonGradient = new THREE.DataTexture(colors, 3, 1, format);
@@ -420,7 +420,7 @@
     toonGradient.magFilter = THREE.NearestFilter;
     toonGradient.needsUpdate = true;
 
-    // : Ambient, Hemisphere, Key Light  Front Fill Light
+    // ระบบแสงเน้นมิติความลึก: Ambient, Hemisphere, Key Light และ Front Fill Light
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     scene.add(ambientLight);
 
@@ -443,7 +443,7 @@
     const modelGroup = new THREE.Group();
     scene.add(modelGroup);
 
-    // 3.  Viewport
+    // 3. จัดการปุ่มเครื่องมือและการสลับโหมด Viewport
     let isTouchLocked = false;
     let isMotionActive = true;
     let selectedMesh = null;
@@ -454,7 +454,7 @@
       isTouchLocked = !isTouchLocked;
       controls.enabled = !isTouchLocked;
       touchToggleBtn.classList.toggle('locked', isTouchLocked);
-      touchToggleBtn.textContent = isTouchLocked ? '  ()' : '  3D ()';
+      touchToggleBtn.textContent = isTouchLocked ? '🔒 ล็อกมุมมอง (เลื่อนหน้าจอง่าย)' : '🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)';
     });
 
     const btnTranslate = document.getElementById('btn-translate');
@@ -474,7 +474,7 @@
 
     btnMotion.addEventListener('click', () => {
       isMotionActive = !isMotionActive;
-      btnMotion.textContent = isMotionActive ? ' Motion: ON' : ' Motion: OFF';
+      btnMotion.textContent = isMotionActive ? '🎬 Motion: ON' : '🎬 Motion: OFF';
       btnMotion.classList.toggle('active', isMotionActive);
     });
 
@@ -485,7 +485,7 @@
       if (e.key === 'r' || e.key === 'R') setGizmoMode('scale', btnScale);
     });
 
-    // 4. Raycaster  Canvas
+    // 4. Raycaster สำหรับคลิกเลือกชิ้นส่วนโมเดลบน Canvas
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -522,7 +522,7 @@
     }
     window.addEventListener('resize', updateViewport);
 
-    // 5. Main Render Loop  Procedural Idle & Breathing Motion
+    // 5. Main Render Loop พร้อมระบบ Procedural Idle & Breathing Motion
     function animate() {
       requestAnimationFrame(animate);
       if (controls.enabled) controls.update();
@@ -579,7 +579,7 @@
       controls.update();
     }
 
-    // 6.  3D  Chunky Vinyl Figure  Bevel  Inverted Hull
+    // 6. ฟังก์ชันสร้างโมเดล 3D แบบ Chunky Vinyl Figure พร้อม Bevel และขอบ Inverted Hull
     function renderModel(spec) {
       transformControls.detach();
       selectedMesh = null;
@@ -629,7 +629,7 @@
           for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1]);
           shape.closePath();
 
-          //  0.6  (Rounded Bevel) 
+          // ปรับความหนาเริ่มต้นเป็น 0.6 พร้อมเปิดขอบโค้งมน (Rounded Bevel) สไตล์ของเล่นไวนิล
           const extrudeSettings = {
             depth: p.depth !== undefined ? p.depth : 0.6,
             bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
@@ -674,7 +674,7 @@
           };
           objectMap.set(id, mesh);
 
-          //  Inverted Hull 
+          // เส้นตัดขอบ Inverted Hull สีดำ
           if (item.type !== 'plane') {
             const outlineMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide });
             const outlineMesh = new THREE.Mesh(geometry, outlineMat);
@@ -776,7 +776,7 @@
             .slice(0, 4)
             .map(c => c[0]);
 
-          detectedPaletteContainer.innerHTML = '<span style="font-size:12px;color:#aaa;">:</span>';
+          detectedPaletteContainer.innerHTML = '<span style="font-size:12px;color:#aaa;">สีหลัก:</span>';
           topColors.forEach(hex => {
             const dot = document.createElement('div');
             dot.className = 'color-dot';
@@ -800,7 +800,7 @@
       uploadedImagePreview.src = '';
     });
 
-    // 8.  Gemini 3.5 Flash-Lite API
+    // 8. เชื่อมต่อ Gemini 3.5 Flash-Lite API
     const apiKeyInput = document.getElementById('api-key-input');
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
@@ -871,11 +871,11 @@ STRICT CHUNKY 3D TOY MODELING RULES:
       const prompt = promptInput.value.trim();
 
       if (!apiKey) {
-        setStatus('error', ' Gemini API Key ');
+        setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
         return;
       }
       if (!prompt && !currentImageBase64) {
-        setStatus('error', ' 3D  2D');
+        setStatus('error', 'กรุณาระบุคำอธิบายโมเดล 3D หรืออัปโหลดรูปภาพ 2D');
         return;
       }
 
@@ -896,7 +896,7 @@ STRICT CHUNKY 3D TOY MODELING RULES:
         });
       }
 
-      let userText = prompt || ' 3D  (Chunky Vinyl Toy)   ';
+      let userText = prompt || 'วิเคราะห์ตัวละครในรูปภาพและถอดแบบเป็นโมเดล 3D สไตล์ฟิกเกอร์ไวนิลตัวหนา (Chunky Vinyl Toy) มีมิติความหนาชัดเจนรอบทิศทาง ขอบโค้งมน ไม่แบนเป็นกระดาษ';
       if (detectedColorsSummary) {
         userText += ` (Detected Dominant Colors: ${detectedColorsSummary})`;
       }
@@ -923,22 +923,22 @@ STRICT CHUNKY 3D TOY MODELING RULES:
 
         const data = await response.json();
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) throw new Error('');
+        if (!rawText) throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
 
         const specData = JSON.parse(rawText);
         renderModel(specData);
         
-        setStatus('ready', ' 3D ');
+        setStatus('ready', 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
         exportBtn.disabled = false;
       } catch (err) {
-        setStatus('error', ': ' + err.message);
+        setStatus('error', 'เกิดข้อผิดพลาด: ' + err.message);
       } finally {
         generateBtn.disabled = false;
       }
     });
 
     exportBtn.addEventListener('click', () => {
-      setStatus('generating', ' GLB...');
+      setStatus('generating', 'กำลังสร้างไฟล์ GLB...');
       const exporter = new GLTFExporter();
       exporter.parse(
         modelGroup,
@@ -947,7 +947,7 @@ STRICT CHUNKY 3D TOY MODELING RULES:
           const url = URL.createObjectURL(blob);
           downloadLink.href = url;
           downloadLink.style.display = 'block';
-          setStatus('ready', 'Export ! ');
+          setStatus('ready', 'Export สำเร็จ! กดดาวน์โหลดไฟล์ด้านล่าง');
         },
         (error) => setStatus('error', 'Export error: ' + error.message),
         { binary: true }
