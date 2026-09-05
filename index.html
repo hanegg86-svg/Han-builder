@@ -15,9 +15,9 @@
       display: flex;
       flex-direction: row;
       height: 100vh;
-      overflow: hidden;
       background-color: #1a1a1a;
       color: #ffffff;
+      overflow: hidden;
     }
     #sidebar {
       width: 380px;
@@ -50,13 +50,14 @@
       background: #181818;
       color: #fff;
       font-size: 14px;
+      line-height: 1.5;
     }
     textarea {
-      height: 90px;
-      resize: none;
+      height: 95px;
+      resize: vertical;
     }
     button {
-      padding: 10px 16px;
+      padding: 12px 16px;
       border-radius: 6px;
       border: none;
       background: #0084ff;
@@ -64,6 +65,7 @@
       font-weight: bold;
       cursor: pointer;
       transition: background 0.2s;
+      font-size: 14px;
     }
     button:hover:not(:disabled) {
       background: #0070d6;
@@ -102,11 +104,12 @@
     #download-image-btn {
       display: inline-block;
       text-align: center;
-      padding: 10px;
+      padding: 12px;
       color: white;
       text-decoration: none;
       border-radius: 6px;
       font-weight: bold;
+      font-size: 14px;
     }
     #download-link {
       background: #10b981;
@@ -130,7 +133,7 @@
     #preview-container {
       display: none;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       background: #1e1e1e;
       padding: 12px;
       border-radius: 6px;
@@ -146,24 +149,56 @@
       border: 1px solid #444;
     }
 
-    /* ปรับ Layout ให้เหมาะกับจอมือถือ */
+    /* ปุ่มสลับโหมดสัมผัส 3D */
+    #touch-toggle-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 20;
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid #555;
+      color: #fff;
+      backdrop-filter: blur(4px);
+    }
+    #touch-toggle-btn.locked {
+      background: rgba(220, 38, 38, 0.8);
+      border-color: #ef4444;
+    }
+
+    /* Responsive Mobile Mode */
     @media (max-width: 768px) {
       body {
         flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
       #canvas-container {
-        height: 42vh;
+        height: 38vh;
+        min-height: 240px;
         width: 100%;
         flex: none;
       }
       #sidebar {
         width: 100%;
         min-width: unset;
-        height: 58vh;
-        flex: 1;
+        height: auto;
+        flex: none;
+        overflow-y: visible;
         border-right: none;
         border-top: 1px solid #333333;
         padding: 16px;
+        padding-bottom: 40px;
+      }
+      input[type="password"],
+      input[type="text"],
+      textarea {
+        font-size: 16px; /* ป้องกันเบราว์เซอร์มือถือเด้ง Auto-Zoom */
       }
     }
   </style>
@@ -179,7 +214,9 @@
 </head>
 <body>
 
-  <div id="canvas-container"></div>
+  <div id="canvas-container">
+    <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
+  </div>
 
   <div id="sidebar">
     <h1>Agent 3D Builder</h1>
@@ -220,7 +257,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
-    // 1. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer เพื่อให้จับภาพได้
+    // 1. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer สำหรับบันทึกภาพ
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -235,6 +272,23 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+
+    // จัดการระบบสลับโหมดล็อกการหมุน 3D
+    const touchToggleBtn = document.getElementById('touch-toggle-btn');
+    let isTouchLocked = false;
+
+    touchToggleBtn.addEventListener('click', () => {
+      isTouchLocked = !isTouchLocked;
+      if (isTouchLocked) {
+        controls.enabled = false;
+        touchToggleBtn.classList.add('locked');
+        touchToggleBtn.textContent = '🔒 ล็อกมุมมอง (เลื่อนหน้าจอง่าย)';
+      } else {
+        controls.enabled = true;
+        touchToggleBtn.classList.remove('locked');
+        touchToggleBtn.textContent = '🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)';
+      }
+    });
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
@@ -264,7 +318,9 @@
 
     function animate() {
       requestAnimationFrame(animate);
-      controls.update();
+      if (controls.enabled) {
+        controls.update();
+      }
       renderer.render(scene, camera);
     }
     animate();
@@ -496,7 +552,6 @@ Ensure objects rest naturally relative to ground level (Y = 0) or stack logicall
       );
     });
 
-    // ตรวจสอบขนาดเริ่มต้นเมื่อโหลดเสร็จ
     setTimeout(updateViewport, 100);
   </script>
 </body>
