@@ -158,7 +158,8 @@
       background-color: #111111;
     }
     #preview-container,
-    #uploaded-preview-container {
+    #uploaded-preview-container-front,
+    #uploaded-preview-container-side {
       display: none;
       flex-direction: column;
       gap: 10px;
@@ -168,21 +169,24 @@
       border: 1px solid #333;
     }
     #preview-image,
-    #uploaded-image-preview {
+    #uploaded-image-preview-front,
+    #uploaded-image-preview-side {
       width: 100%;
       height: auto;
-      max-height: 160px;
+      max-height: 140px;
       object-fit: contain;
       background: #141414;
       border-radius: 4px;
       border: 1px solid #444;
     }
-    #remove-image-btn {
+    #remove-image-btn-front,
+    #remove-image-btn-side {
       background: #dc2626;
       padding: 6px 10px;
       font-size: 12px;
     }
-    #remove-image-btn:hover {
+    #remove-image-btn-front:hover,
+    #remove-image-btn-side:hover {
       background: #b91c1c;
     }
 
@@ -212,6 +216,37 @@
       flex-direction: column;
       gap: 4px;
       word-break: break-word;
+    }
+
+    /* Smart Pose Library Panel */
+    #pose-container {
+      background: #1c2430;
+      border: 1px solid #2d3748;
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #pose-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #60a5fa;
+    }
+    .pose-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .pose-btn {
+      padding: 8px 10px;
+      font-size: 12px;
+      background: #374151;
+      border-radius: 4px;
+      font-weight: normal;
+    }
+    .pose-btn:hover:not(:disabled) {
+      background: #4b5563;
     }
 
     /* Inspector ปรับแต่งชิ้นส่วน 3D */
@@ -396,23 +431,47 @@
       data-testid="api-key-input" 
       placeholder="ใส่ Gemini API Key ที่นี่" />
 
-    <label for="image-input">อัปโหลดรูปภาพ 2D (ตัวเลือกเสริม):</label>
+    <!-- Multi-View Image Reference -->
+    <label for="image-input-front">1. ภาพมุมหน้า (Front View Reference):</label>
     <input 
       type="file" 
-      id="image-input" 
-      data-testid="image-input" 
+      id="image-input-front" 
+      data-testid="image-input-front" 
       accept="image/*" />
 
-    <div id="uploaded-preview-container">
-      <img id="uploaded-image-preview" alt="Uploaded Preview" />
-      <button id="remove-image-btn" type="button">❌ ลบรูปภาพที่เลือก</button>
+    <div id="uploaded-preview-container-front">
+      <img id="uploaded-image-preview-front" alt="Front Preview" />
+      <button id="remove-image-btn-front" type="button">❌ ลบรูปภาพมุมหน้า</button>
+    </div>
+
+    <label for="image-input-side">2. ภาพมุมข้าง (Side View Reference - ตัวเลือกเสริม):</label>
+    <input 
+      type="file" 
+      id="image-input-side" 
+      data-testid="image-input-side" 
+      accept="image/*" />
+
+    <div id="uploaded-preview-container-side">
+      <img id="uploaded-image-preview-side" alt="Side Preview" />
+      <button id="remove-image-btn-side" type="button">❌ ลบรูปภาพมุมข้าง</button>
     </div>
 
     <label for="prompt-input">คำอธิบายโมเดล 3D (หรือคำสั่งปรับปรุงต่อยอด):</label>
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: สร้างหุ่นยนต์สีเงิน หรือ สั่งต่อยอด: เพิ่มหมวกคาวบอยสีน้ำตาล, เปลี่ยนสีตัวเป็นสีแดง"></textarea>
+      placeholder="ตัวอย่าง: หุ่นยนต์แมวอวกาศ หรือสั่งต่อยอด: เติมดาบเลเซอร์ที่มือขวา, เปลี่ยนสีเสื้อเป็นสีเขียว"></textarea>
+
+    <!-- Smart Pose Library -->
+    <div id="pose-container">
+      <div id="pose-title">🏃 Smart Pose Library (จัดท่าทางอัตโนมัติ):</div>
+      <div class="pose-grid">
+        <button id="pose-stand-btn" class="pose-btn" type="button" disabled>🧍 ยืนตรง</button>
+        <button id="pose-run-btn" class="pose-btn" type="button" disabled>🏃 ท่าวิ่ง</button>
+        <button id="pose-sit-btn" class="pose-btn" type="button" disabled>🪑 ท่านั่ง</button>
+        <button id="pose-wave-btn" class="pose-btn" type="button" disabled>👋 โบกมือทักทาย</button>
+      </div>
+    </div>
 
     <!-- กล่องปรับแต่งชิ้นส่วนที่เลือก (Inspector) -->
     <div id="inspector-container">
@@ -741,10 +800,19 @@
 
     // 5. จัดการ Element, สถานะสะสม และการเชื่อมต่อ Gemini API
     const apiKeyInput = document.getElementById('api-key-input');
-    const imageInput = document.getElementById('image-input');
-    const uploadedPreviewContainer = document.getElementById('uploaded-preview-container');
-    const uploadedImagePreview = document.getElementById('uploaded-image-preview');
-    const removeImageBtn = document.getElementById('remove-image-btn');
+    
+    // Front Image
+    const imageInputFront = document.getElementById('image-input-front');
+    const uploadedPreviewContainerFront = document.getElementById('uploaded-preview-container-front');
+    const uploadedImagePreviewFront = document.getElementById('uploaded-image-preview-front');
+    const removeImageBtnFront = document.getElementById('remove-image-btn-front');
+
+    // Side Image
+    const imageInputSide = document.getElementById('image-input-side');
+    const uploadedPreviewContainerSide = document.getElementById('uploaded-preview-container-side');
+    const uploadedImagePreviewSide = document.getElementById('uploaded-image-preview-side');
+    const removeImageBtnSide = document.getElementById('remove-image-btn-side');
+
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
     const undoBtn = document.getElementById('undo-btn');
@@ -755,6 +823,13 @@
     const previewContainer = document.getElementById('preview-container');
     const historyBox = document.getElementById('history-box');
     const historyList = document.getElementById('history-list');
+
+    // Pose Buttons
+    const poseStandBtn = document.getElementById('pose-stand-btn');
+    const poseRunBtn = document.getElementById('pose-run-btn');
+    const poseSitBtn = document.getElementById('pose-sit-btn');
+    const poseWaveBtn = document.getElementById('pose-wave-btn');
+    const poseButtons = [poseStandBtn, poseRunBtn, poseSitBtn, poseWaveBtn];
 
     // Inspector Elements
     const inspectorContainer = document.getElementById('inspector-container');
@@ -776,6 +851,16 @@
     let promptSession = [];
     const modelHistory = [];
     let selectedMesh = null;
+
+    let frontImageBase64 = null;
+    let frontImageMimeType = null;
+    let sideImageBase64 = null;
+    let sideImageMimeType = null;
+
+    function updatePoseButtonsState() {
+      const hasModel = currentSpec !== null;
+      poseButtons.forEach(btn => btn.disabled = !hasModel);
+    }
 
     function updateHistoryUI() {
       historyList.innerHTML = '';
@@ -921,7 +1006,7 @@
     container.addEventListener('pointerup', (e) => {
       if (e.target !== renderer.domElement) return;
       const dist = Math.hypot(e.clientX - pointerDownCoord.x, e.clientY - pointerDownCoord.y);
-      if (dist > 5) return; // เป็นการลากหมุนหน้าจอ ไม่ใช่การคลิก
+      if (dist > 5) return;
       if (transformControls.dragging) return;
 
       const rect = renderer.domElement.getBoundingClientRect();
@@ -947,9 +1032,6 @@
       }
     });
 
-    let currentImageBase64 = null;
-    let currentImageMimeType = null;
-
     const savedApiKey = localStorage.getItem('gemini_api_key');
     if (savedApiKey) {
       apiKeyInput.value = savedApiKey;
@@ -959,31 +1041,60 @@
       localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
     });
 
-    imageInput.addEventListener('change', (e) => {
+    // Handle Front View Image
+    imageInputFront.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target.result;
-        uploadedImagePreview.src = result;
-        uploadedPreviewContainer.style.display = 'flex';
+        uploadedImagePreviewFront.src = result;
+        uploadedPreviewContainerFront.style.display = 'flex';
 
         const match = result.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
         if (match) {
-          currentImageMimeType = match[1];
-          currentImageBase64 = match[2];
+          frontImageMimeType = match[1];
+          frontImageBase64 = match[2];
         }
       };
       reader.readAsDataURL(file);
     });
 
-    removeImageBtn.addEventListener('click', () => {
-      imageInput.value = '';
-      currentImageBase64 = null;
-      currentImageMimeType = null;
-      uploadedPreviewContainer.style.display = 'none';
-      uploadedImagePreview.src = '';
+    removeImageBtnFront.addEventListener('click', () => {
+      imageInputFront.value = '';
+      frontImageBase64 = null;
+      frontImageMimeType = null;
+      uploadedPreviewContainerFront.style.display = 'none';
+      uploadedImagePreviewFront.src = '';
+    });
+
+    // Handle Side View Image
+    imageInputSide.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target.result;
+        uploadedImagePreviewSide.src = result;
+        uploadedPreviewContainerSide.style.display = 'flex';
+
+        const match = result.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        if (match) {
+          sideImageMimeType = match[1];
+          sideImageBase64 = match[2];
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    removeImageBtnSide.addEventListener('click', () => {
+      imageInputSide.value = '';
+      sideImageBase64 = null;
+      sideImageMimeType = null;
+      uploadedPreviewContainerSide.style.display = 'none';
+      uploadedImagePreviewSide.src = '';
     });
 
     function setStatus(state, message) {
@@ -992,8 +1103,8 @@
     }
 
     const SYSTEM_PROMPT = `
-You are "PolyMorph 3D" — an elite Procedural 3D Geometry and Spatial Reconstruction Engine.
-Your mission is to transform user prompts, 2D reference images, OR iterative modifications into production-grade procedural 3D models using Three.js primitive and spline geometry schemas.
+You are "PolyMorph 3D" — an elite Procedural 3D Geometry, Multi-View Spatial Reconstruction, and Kinematic Posing Engine.
+Your mission is to transform user prompts, 2D reference images (Front and Side views), OR kinematic posing commands into production-grade procedural 3D models using Three.js primitive and spline geometry schemas.
 
 OUTPUT FORMAT REQUIREMENTS:
 - You MUST output ONLY a valid JSON object matching the schema below.
@@ -1004,7 +1115,7 @@ JSON SCHEMA:
 {
   "objects": [
     {
-      "id": "unique_string_id", // e.g. "torso", "head", "upper_arm_l", "eye_r"
+      "id": "unique_string_id", // e.g. "torso", "head", "upper_arm_l", "lower_arm_l", "leg_r"
       "parent": "parent_id_or_null", // Root parts use null. Sub-parts inherit parent transform!
       "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
       "parameters": {
@@ -1031,20 +1142,24 @@ JSON SCHEMA:
 }
 
 ==================================================
-MODE 1: 2D IMAGE TO 3D CONVERSION (SPATIAL LIFTING)
+MODE 1: MULTI-VIEW & 2D IMAGE TO 3D CONVERSION
 ==================================================
-When an image is provided, reconstruct it from 2D flat space into true 3D volume using the "Layered Depth & Bevel" technique:
-1. SILHOUETTE EXTRUSION WITH BEVEL:
-   - Identify the main outline/body contour of the 2D character or object.
-   - Use "extrude" with a multi-point 2D polygon shape (at least 8-24 points outlining the silhouette).
+When 2D images are provided:
+1. DUAL-VIEW INTEGRATION (FRONT + SIDE):
+   - If BOTH Front View and Side View are provided:
+     * FRONT VIEW: dictates X (width), Y (height), facial expressions, decals, limb width, and primary color layout.
+     * SIDE VIEW: dictates Z (depth / thickness), spine curvature, snout/nose protrusion, backpack/tail placement, and front-to-back profile.
+     * Reconcile both images to form a fully rounded, anatomically accurate 3D model with zero flat guesswork!
+2. SILHOUETTE EXTRUSION WITH BEVEL:
+   - Identify the main outline contour. Use "extrude" with a multi-point polygon shape (at least 8-24 points).
    - Set "depth" to create tactile volume (0.2 to 0.45).
    - ALWAYS enable bevel: "bevelEnabled": true, "bevelThickness": 0.03 to 0.06, "bevelSize": 0.03 to 0.05.
-2. Z-AXIS DEPTH STACKING:
+3. Z-AXIS DEPTH STACKING:
    - Background elements: Z = -0.15 to -0.3
    - Main Torso / Silhouette: Centered around Z = 0
-   - Facial features / Decals: Anchor to the body/head with parent, placed slightly proud on the front surface (Z = +0.12 to +0.22).
-3. 2D LINE STROKES & LIMBS TO 3D SPLINES ("tube"):
-   - Cartoon arms, legs, antennae, outlines, and facial lines must be converted into 3D smooth paths using "tube" (radius: 0.025 to 0.045).
+   - Facial features / Decals: Anchor to body/head with parent, placed slightly proud on front surface (Z = +0.12 to +0.22).
+4. 2D LINE STROKES & LIMBS TO 3D SPLINES ("tube"):
+   - Cartoon arms, legs, antennae, and facial lines must be converted into 3D smooth paths using "tube" (radius: 0.025 to 0.045).
 
 ==================================================
 MODE 2: 3D FROM SCRATCH (TEXT-TO-3D)
@@ -1055,19 +1170,26 @@ When starting a brand new model from text:
 3. MATERIALS: Vibrant cartoon colors, metalness 0.7-0.9 for metals, 0.0-0.1 for matte/skin/cloth.
 
 ==================================================
-MODE 3: ITERATIVE REFINEMENT & MODIFICATION (DELTA UPDATE)
+MODE 3: ITERATIVE REFINEMENT (DELTA UPDATE)
 ==================================================
-When existing 3D model JSON is provided in the prompt alongside new user modifications:
-1. PRESERVE EXISTING WORK:
-   - Retain existing object IDs, hierarchy, and shapes unless explicitly requested to alter, recolor, reposition, or delete them.
-2. ADDING ACCESSORIES OR NEW PARTS:
-   - Create new unique IDs for added parts.
-   - Link new parts to existing parent structures using "parent" attribute (e.g. adding a hat -> parent: "head", adding a weapon -> parent: "hand_r").
-   - Position coordinates locally relative to the parent object.
-3. MODIFYING ATTRIBUTES:
-   - If user asks to change color, scale, or orientation of existing parts, locate those parts in the JSON and update only the targeted values.
-4. RETURN COMPLETE COMPOSITION:
-   - Always return the full, valid JSON containing ALL retained, updated, and newly added objects.
+When existing 3D model JSON is provided with user modifications:
+1. PRESERVE EXISTING WORK: Retain existing object IDs, hierarchy, and shapes unless requested to alter, recolor, reposition, or delete.
+2. ADDING ACCESSORIES: Create unique IDs, link to parent (e.g. hat -> parent: "head", sword -> parent: "hand_r").
+3. FULL COMPOSITION: Always return the full, valid JSON containing all retained, updated, and newly added objects.
+
+==================================================
+MODE 4: KINEMATIC POSE ADJUSTMENT (SMART POSE LIBRARY)
+==================================================
+When instructed to adjust the character's POSE (e.g. Running, Sitting, Waving, Standing):
+1. KEEP IDENTITY & GEOMETRY INTACT:
+   - Do NOT change types, parameters, colors, or materials of existing parts.
+   - Do NOT delete or rename existing object IDs.
+2. ANATOMICAL ROTATIONS & OFFSETS:
+   - Adjust ONLY "rotation" (in radians) and minor local "position" offsets of limb child parts (arms, forearms, legs, head, feet, spine).
+   - "stand": Neutral standing posture, arms at sides, legs straight downward.
+   - "run": Dynamic running pose. Left arm swinging forward, right arm swinging back. Left leg forward with knee bent, right leg trailing back. Torso tilted forward slightly (rotation.x ~ 0.15 to 0.25).
+   - "sit": Sitting pose. Hip/thighs bent forward 90 degrees (rotation.x ~ 1.57), knees bent downward 90 degrees. Main root position lowered so buttocks rest on ground or chair height.
+   - "wave": Waving pose. One arm (e.g. right arm) raised upward with elbow bent, hand oriented forward/upward, head tilted slightly toward viewer.
 
 ==================================================
 CRITICAL COMPOSITION RULES:
@@ -1086,7 +1208,7 @@ CRITICAL COMPOSITION RULES:
         return;
       }
 
-      if (!prompt && !currentImageBase64 && !currentSpec) {
+      if (!prompt && !frontImageBase64 && !sideImageBase64 && !currentSpec) {
         setStatus('error', 'กรุณาระบุคำอธิบายโมเดล 3D หรืออัปโหลดรูปภาพ 2D');
         return;
       }
@@ -1096,17 +1218,30 @@ CRITICAL COMPOSITION RULES:
       undoBtn.disabled = true;
       resetBtn.disabled = true;
       exportBtn.disabled = true;
+      poseButtons.forEach(btn => btn.disabled = true);
       downloadLink.style.display = 'none';
       previewContainer.style.display = 'none';
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
 
       const parts = [];
-      if (currentImageBase64) {
+
+      // ใส่ภาพมุมหน้า
+      if (frontImageBase64) {
         parts.push({
           inline_data: {
-            mime_type: currentImageMimeType || 'image/jpeg',
-            data: currentImageBase64
+            mime_type: frontImageMimeType || 'image/jpeg',
+            data: frontImageBase64
+          }
+        });
+      }
+
+      // ใส่ภาพมุมข้าง
+      if (sideImageBase64) {
+        parts.push({
+          inline_data: {
+            mime_type: sideImageMimeType || 'image/jpeg',
+            data: sideImageBase64
           }
         });
       }
@@ -1118,9 +1253,15 @@ CRITICAL COMPOSITION RULES:
         actionLabel = prompt || 'ปรับปรุงรายละเอียดโมเดลเพิ่มเติม';
         userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Please modify, add, recolor, or delete parts from the current model JSON according to the instructions. Maintain existing parts and parent-child links that were not asked to change. Output the full updated JSON.`;
       } else {
-        if (currentImageBase64) {
-          actionLabel = prompt ? `แปลงภาพ 2D + ${prompt}` : 'แปลงรูปภาพ 2D เป็น 3D Model';
+        if (frontImageBase64 && sideImageBase64) {
+          actionLabel = prompt ? `แปลงภาพ Multi-View (หน้า+ข้าง) + ${prompt}` : 'แปลงภาพ Multi-View (หน้า+ข้าง) เป็น 3D Model';
+          userText = `วิเคราะห์ภาพอ้างอิง 2 มุมมอง (Multi-View Reference) พร้อมกัน:\n- รูปภาพแรกคือ "มุมมองด้านหน้า (Front View)": ใช้กำหนดความกว้าง (X), ความสูง (Y), สัดส่วนหน้าตา แขนขา และสีสัน\n- รูปภาพที่สองคือ "มุมมองด้านข้าง (Side View)": ใช้กำหนดความหนาและความลึก (Z), ความโค้งเว้าของสรีระ, และความยื่นขององค์ประกอบ\nผสานโครงสร้าง 3D ออกมาอย่างสมบูรณ์แบบโดยไม่ต้องเดาความลึก ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
+        } else if (frontImageBase64) {
+          actionLabel = prompt ? `แปลงภาพ 2D (หน้า) + ${prompt}` : 'แปลงรูปภาพ 2D เป็น 3D Model';
           userText = `วิเคราะห์รูปภาพ 2D นี้อย่างละเอียด: ดึงโครงสร้างเส้นรอบรูป (Silhouette) ของตัวละครหรือวัตถุหลักออกมาเป็นทรง 3D หนาแบบมีขอบมน (Extrude with Bevel) แยกเลเยอร์ความลึกแกน Z ของชิ้นส่วนหน้าตา แขนขา และเครื่องประดับให้ลอยนูนขึ้นมามีมิติ แขนขาทำเป็นท่อโค้ง 3 มิติ (Tube Spline) เก็บสีสันและความเงาตามภาพต้นฉบับอย่างแม่นยำ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
+        } else if (sideImageBase64) {
+          actionLabel = prompt ? `แปลงภาพ 2D (ข้าง) + ${prompt}` : 'แปลงรูปภาพมุมข้าง 2D เป็น 3D Model';
+          userText = `วิเคราะห์รูปภาพมุมข้าง 2D นี้อย่างละเอียด: ดึงโครงสร้างสรีระและความหนาแกน Z ของวัตถุหลักออกมาเป็นทรง 3D พร้อมประกอบรายละเอียดรอบตัว ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
         } else {
           actionLabel = prompt;
           userText = prompt;
@@ -1181,9 +1322,97 @@ CRITICAL COMPOSITION RULES:
       } finally {
         generateBtn.disabled = false;
         resetBtn.disabled = false;
+        updatePoseButtonsState();
         updateHistoryUI();
         updateUndoButtonState();
       }
+    });
+
+    // ฟังก์ชันสั่งจัดท่าทางผ่าน Smart Pose Library
+    async function applySmartPose(poseName, poseInstruction) {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) {
+        setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
+        return;
+      }
+      if (!currentSpec) {
+        setStatus('error', 'ต้องสร้างโมเดล 3D ก่อนจึงจะจัดท่าทางได้');
+        return;
+      }
+
+      setStatus('generating', `AI กำลังคำนวณการจัดท่าทาง: ${poseName}...`);
+      generateBtn.disabled = true;
+      undoBtn.disabled = true;
+      resetBtn.disabled = true;
+      exportBtn.disabled = true;
+      poseButtons.forEach(btn => btn.disabled = true);
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
+
+      const userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nKINEMATIC POSE ADJUSTMENT REQUEST:\nPose: "${poseName}".\nInstruction: ${poseInstruction}\n\nSTRICT INSTRUCTIONS: Adjust ONLY the "rotation" and local "position" of joint and limb child parts (arms, elbows, legs, head) to form this pose anatomically. Do NOT change colors, geometries, or delete existing object IDs. Output the full updated JSON.`;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userText }] }],
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.1
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
+
+        const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+        const specData = JSON.parse(sanitizedText);
+
+        currentSpec = specData;
+        const actionLabel = `จัดท่าทาง: ${poseName}`;
+        promptSession.push(actionLabel);
+        modelHistory.push({
+          spec: JSON.parse(JSON.stringify(specData)),
+          session: [...promptSession]
+        });
+
+        renderModel(specData);
+        setStatus('ready', `จัดท่าทาง "${poseName}" สำเร็จเรียบร้อย`);
+        exportBtn.disabled = false;
+      } catch (err) {
+        setStatus('error', 'จัดท่าทางล้มเหลว: ' + err.message);
+      } finally {
+        generateBtn.disabled = false;
+        resetBtn.disabled = false;
+        updatePoseButtonsState();
+        updateHistoryUI();
+        updateUndoButtonState();
+      }
+    }
+
+    poseStandBtn.addEventListener('click', () => {
+      applySmartPose('ยืนตรง (Stand)', 'Return character limbs into a natural, balanced upright standing pose.');
+    });
+
+    poseRunBtn.addEventListener('click', () => {
+      applySmartPose('ท่าวิ่ง (Run)', 'Adjust arms and legs into a dynamic athletic running pose with arms swinging opposite to legs, knees bent, torso leaning forward.');
+    });
+
+    poseSitBtn.addEventListener('click', () => {
+      applySmartPose('ท่านั่ง (Sit)', 'Bend hip joints and thighs forward 90 degrees and knees down 90 degrees, lowering the character root so it looks seated.');
+    });
+
+    poseWaveBtn.addEventListener('click', () => {
+      applySmartPose('โบกมือทักทาย (Wave)', 'Raise one arm upward with elbow bent, palm facing forward waving to the viewer, head tilted friendly.');
     });
 
     undoBtn.addEventListener('click', () => {
@@ -1198,6 +1427,7 @@ CRITICAL COMPOSITION RULES:
         setStatus('ready', `ย้อนกลับไปยังทรงก่อนหน้าเรียบร้อย (ขั้นตอนที่ ${promptSession.length})`);
         exportBtn.disabled = false;
         
+        updatePoseButtonsState();
         updateHistoryUI();
         updateUndoButtonState();
       }
@@ -1210,11 +1440,20 @@ CRITICAL COMPOSITION RULES:
 
       deselectPart();
       promptInput.value = '';
-      imageInput.value = '';
-      currentImageBase64 = null;
-      currentImageMimeType = null;
-      uploadedPreviewContainer.style.display = 'none';
-      uploadedImagePreview.src = '';
+      
+      // Clear front image
+      imageInputFront.value = '';
+      frontImageBase64 = null;
+      frontImageMimeType = null;
+      uploadedPreviewContainerFront.style.display = 'none';
+      uploadedImagePreviewFront.src = '';
+
+      // Clear side image
+      imageInputSide.value = '';
+      sideImageBase64 = null;
+      sideImageMimeType = null;
+      uploadedPreviewContainerSide.style.display = 'none';
+      uploadedImagePreviewSide.src = '';
 
       previewContainer.style.display = 'none';
       downloadLink.style.display = 'none';
@@ -1227,6 +1466,7 @@ CRITICAL COMPOSITION RULES:
       }
       renderer.render(scene, camera);
 
+      updatePoseButtonsState();
       updateHistoryUI();
       updateUndoButtonState();
       setStatus('idle', 'ล้างข้อมูลโมเดลและคำสั่งเรียบร้อย เริ่มต้นใหม่ได้ทันที');
