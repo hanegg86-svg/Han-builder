@@ -89,6 +89,12 @@
       background: #555555;
       cursor: not-allowed;
     }
+    #snap-png-btn {
+      background: #6366f1;
+    }
+    #snap-png-btn:hover:not(:disabled) {
+      background: #4f46e5;
+    }
     #undo-btn {
       background: #6b7280;
     }
@@ -330,40 +336,6 @@
       background: #dc2626;
     }
 
-    /* แผงควบคุม Transform Gizmo บน Canvas */
-    #gizmo-toolbar {
-      position: absolute;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 20;
-      display: flex;
-      gap: 6px;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 6px;
-      border-radius: 30px;
-      border: 1px solid #444;
-      backdrop-filter: blur(6px);
-    }
-    .gizmo-btn {
-      padding: 6px 12px;
-      font-size: 12px;
-      border-radius: 20px;
-      background: #2a2a2a;
-      border: 1px solid #555;
-      color: #fff;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .gizmo-btn.active {
-      background: #0284c7;
-      border-color: #38bdf8;
-      color: #fff;
-    }
-    .gizmo-btn:hover:not(.active) {
-      background: #3a3a3a;
-    }
-
     /* แถบควบคุมกล้องถ่ายภาพ AR */
     #camera-control-bar {
       position: absolute;
@@ -459,15 +431,6 @@
         padding: 5px 9px;
         font-size: 11px;
       }
-      #gizmo-toolbar {
-        bottom: 8px;
-        padding: 4px;
-        gap: 4px;
-      }
-      .gizmo-btn {
-        padding: 4px 8px;
-        font-size: 11px;
-      }
       input[type="password"],
       input[type="text"],
       input[type="file"],
@@ -497,13 +460,6 @@
     </div>
 
     <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
-    
-    <div id="gizmo-toolbar">
-      <button id="gizmo-translate" class="gizmo-btn active" type="button" title="Translate (เลื่อนตำแหน่ง)">✥ ย้าย</button>
-      <button id="gizmo-rotate" class="gizmo-btn" type="button" title="Rotate (หมุนองศา)">🔄 หมุน</button>
-      <button id="gizmo-scale" class="gizmo-btn" type="button" title="Scale (ยืด/ขยาย)">📐 ขยาย</button>
-      <button id="gizmo-deselect" class="gizmo-btn" type="button" title="Deselect (ปลดการเลือก)">❌ ปลดเลือก</button>
-    </div>
   </div>
 
   <div id="sidebar">
@@ -597,6 +553,7 @@
     </div>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
+    <button id="snap-png-btn" data-testid="snap-png-btn" disabled>📸 เซฟรูปภาพโมเดล (PNG)</button>
     <button id="undo-btn" data-testid="undo-btn" disabled>↩️ ย้อนกลับทรงก่อนหน้า</button>
     <button id="reset-btn" data-testid="reset-btn">🧹 ล้างคำสั่ง / เริ่มโมเดลใหม่</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
@@ -620,7 +577,6 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-    import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
     // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
     if ('serviceWorker' in navigator) {
@@ -650,14 +606,6 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-
-    // ระบบ TransformControls (3D Gizmo)
-    const transformControls = new TransformControls(camera, renderer.domElement);
-    scene.add(transformControls);
-
-    transformControls.addEventListener('dragging-changed', (event) => {
-      controls.enabled = !event.value;
-    });
 
     const touchToggleBtn = document.getElementById('touch-toggle-btn');
     let isTouchLocked = false;
@@ -917,6 +865,7 @@
 
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
+    const snapPngBtn = document.getElementById('snap-png-btn');
     const undoBtn = document.getElementById('undo-btn');
     const resetBtn = document.getElementById('reset-btn');
     const exportBtn = document.getElementById('export-glb-btn');
@@ -958,12 +907,6 @@
     const metalnessVal = document.getElementById('metalness-val');
     const deletePartBtn = document.getElementById('delete-part-btn');
 
-    // Gizmo Toolbar Buttons
-    const gizmoTranslateBtn = document.getElementById('gizmo-translate');
-    const gizmoRotateBtn = document.getElementById('gizmo-rotate');
-    const gizmoScaleBtn = document.getElementById('gizmo-scale');
-    const gizmoDeselectBtn = document.getElementById('gizmo-deselect');
-
     let currentSpec = null;
     let promptSession = [];
     const modelHistory = [];
@@ -978,6 +921,8 @@
       const hasModel = currentSpec !== null;
       poseButtons.forEach(btn => btn.disabled = !hasModel);
       stickerButtons.forEach(btn => btn.disabled = !hasModel);
+      snapPngBtn.disabled = !hasModel;
+      exportBtn.disabled = !hasModel;
     }
 
     function updateHistoryUI() {
@@ -1004,7 +949,6 @@
     function selectPart(mesh) {
       if (!mesh || !mesh.userData || !mesh.userData.id) return;
       selectedMesh = mesh;
-      transformControls.attach(mesh);
       
       const partId = mesh.userData.id;
       selectedPartId.textContent = partId;
@@ -1026,49 +970,8 @@
     // ฟังก์ชันปลดการเลือกชิ้นส่วน
     function deselectPart() {
       selectedMesh = null;
-      transformControls.detach();
       inspectorContainer.style.display = 'none';
     }
-
-    // ควบคุมโหมด Gizmo
-    function setGizmoMode(mode) {
-      transformControls.setMode(mode);
-      [gizmoTranslateBtn, gizmoRotateBtn, gizmoScaleBtn].forEach(btn => btn.classList.remove('active'));
-      if (mode === 'translate') gizmoTranslateBtn.classList.add('active');
-      if (mode === 'rotate') gizmoRotateBtn.classList.add('active');
-      if (mode === 'scale') gizmoScaleBtn.classList.add('active');
-    }
-
-    gizmoTranslateBtn.addEventListener('click', () => setGizmoMode('translate'));
-    gizmoRotateBtn.addEventListener('click', () => setGizmoMode('rotate'));
-    gizmoScaleBtn.addEventListener('click', () => setGizmoMode('scale'));
-    gizmoDeselectBtn.addEventListener('click', deselectPart);
-
-    // Two-Way Binding: เมื่อขยับ Gizmo ให้อัปเดตค่าพิกัดกลับเข้า currentSpec
-    transformControls.addEventListener('objectChange', () => {
-      if (!selectedMesh || !selectedMesh.userData || !currentSpec) return;
-      const targetId = selectedMesh.userData.id;
-      const targetObj = currentSpec.objects.find(o => o.id === targetId);
-
-      if (targetObj) {
-        targetObj.position = [
-          parseFloat(selectedMesh.position.x.toFixed(4)),
-          parseFloat(selectedMesh.position.y.toFixed(4)),
-          parseFloat(selectedMesh.position.z.toFixed(4))
-        ];
-        targetObj.rotation = [
-          parseFloat(selectedMesh.rotation.x.toFixed(4)),
-          parseFloat(selectedMesh.rotation.y.toFixed(4)),
-          parseFloat(selectedMesh.rotation.z.toFixed(4))
-        ];
-        targetObj.scale = [
-          parseFloat(selectedMesh.scale.x.toFixed(4)),
-          parseFloat(selectedMesh.scale.y.toFixed(4)),
-          parseFloat(selectedMesh.scale.z.toFixed(4))
-        ];
-      }
-      updatePreviewSnapshot();
-    });
 
     // Inspector Event Listeners
     partColorInput.addEventListener('input', (e) => {
@@ -1125,7 +1028,6 @@
       if (e.target !== renderer.domElement) return;
       const dist = Math.hypot(e.clientX - pointerDownCoord.x, e.clientY - pointerDownCoord.y);
       if (dist > 5) return;
-      if (transformControls.dragging) return;
 
       const rect = renderer.domElement.getBoundingClientRect();
       const mouse = new THREE.Vector2(
@@ -1148,6 +1050,29 @@
       } else {
         deselectPart();
       }
+    });
+
+    // ==========================================
+    // ปุ่ม Snap ดาวน์โหลดรูปภาพ PNG ทันที
+    // ==========================================
+    snapPngBtn.addEventListener('click', () => {
+      if (!currentSpec) {
+        setStatus('error', 'ไม่มีโมเดล 3D ให้บันทึกรูปภาพ');
+        return;
+      }
+
+      deselectPart();
+      renderer.render(scene, camera);
+      const dataUrl = renderer.domElement.toDataURL('image/png');
+
+      const tempLink = document.createElement('a');
+      tempLink.href = dataUrl;
+      tempLink.download = `3d-model-${Date.now()}.png`;
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
+
+      setStatus('ready', '📸 เซฟรูปภาพโมเดล 3D (PNG) ลงเครื่องเรียบร้อยแล้ว!');
     });
 
     // ==========================================
@@ -1176,7 +1101,7 @@
         cameraToggleBtn.textContent = '❌ ปิดกล้องจริง';
         cameraToggleBtn.classList.add('active-camera');
         cameraSnapBtn.style.display = 'inline-block';
-        setStatus('ready', 'เปิดกล้องสภาพแวดล้อมจริงแล้ว! ปรับหมุนหรือย้ายตำแหน่งโมเดล แล้วกด "ถ่ายรูป AR" ได้ทันที');
+        setStatus('ready', 'เปิดกล้องสภาพแวดล้อมจริงแล้ว! หมุนหามุมมองที่ต้องการ แล้วกด "ถ่ายรูป AR" ได้ทันที');
       } catch (err) {
         setStatus('error', 'ไม่สามารถเปิดกล้องได้: ' + err.message);
       }
@@ -1259,11 +1184,19 @@
 
       previewImg.src = dataUrl;
       downloadImgBtn.href = dataUrl;
-      downloadImgBtn.download = 'ar-camera-photo.png';
+      downloadImgBtn.download = `ar-camera-${Date.now()}.png`;
       previewContainer.style.display = 'flex';
       previewContainer.scrollIntoView({ behavior: 'smooth' });
 
-      setStatus('ready', 'ถ่ายรูป AR รวมโมเดล 3D กับสภาพแวดล้อมจริงเรียบร้อย! ดาวน์โหลดภาพได้ที่เมนูด้านล่าง');
+      // บันทึกลงเครื่องทันที
+      const instantLink = document.createElement('a');
+      instantLink.href = dataUrl;
+      instantLink.download = `ar-camera-${Date.now()}.png`;
+      document.body.appendChild(instantLink);
+      instantLink.click();
+      document.body.removeChild(instantLink);
+
+      setStatus('ready', 'ถ่ายรูป AR รวมโมเดล 3D กับสภาพแวดล้อมจริงเรียบร้อยแล้ว!');
     });
 
     // ==========================================
@@ -1449,7 +1382,7 @@
       modelGroup.add(stickerMesh);
 
       selectPart(stickerMesh);
-      setStatus('ready', `แปะสติกเกอร์หน้าตาสำเร็จ! สามารถใช้ปุ่ม "ย้าย" หรือ "ขยาย" ปรับตำแหน่งได้ตามต้องการ`);
+      setStatus('ready', `แปะสติกเกอร์หน้าตาสำเร็จเรียบร้อย`);
       updatePreviewSnapshot();
     }
 
@@ -1619,6 +1552,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
 
       setStatus('generating', currentSpec ? 'กำลังส่งคำสั่งปรับปรุงโมเดลเดิมไปยัง Gemini...' : 'Connecting to Gemini API...');
       generateBtn.disabled = true;
+      snapPngBtn.disabled = true;
       undoBtn.disabled = true;
       resetBtn.disabled = true;
       exportBtn.disabled = true;
@@ -1719,7 +1653,6 @@ MODE 3: ITERATIVE REFINEMENT & POSE
         promptInput.value = '';
         
         setStatus('ready', promptSession.length > 1 ? `ปรับปรุงโมเดลเรียบร้อย (ขั้นตอนที่ ${promptSession.length})` : 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
-        exportBtn.disabled = false;
       } catch (err) {
         setStatus('error', 'เกิดข้อผิดพลาด: ' + err.message);
       } finally {
@@ -1745,6 +1678,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
 
       setStatus('generating', `AI กำลังคำนวณการจัดท่าทาง: ${poseName}...`);
       generateBtn.disabled = true;
+      snapPngBtn.disabled = true;
       undoBtn.disabled = true;
       resetBtn.disabled = true;
       exportBtn.disabled = true;
@@ -1791,7 +1725,6 @@ MODE 3: ITERATIVE REFINEMENT & POSE
 
         renderModel(specData);
         setStatus('ready', `จัดท่าทาง "${poseName}" สำเร็จเรียบร้อย`);
-        exportBtn.disabled = false;
       } catch (err) {
         setStatus('error', 'จัดท่าทางล้มเหลว: ' + err.message);
       } finally {
@@ -1829,7 +1762,6 @@ MODE 3: ITERATIVE REFINEMENT & POSE
         renderModel(currentSpec);
         downloadLink.style.display = 'none';
         setStatus('ready', `ย้อนกลับไปยังทรงก่อนหน้าเรียบร้อย (ขั้นตอนที่ ${promptSession.length})`);
-        exportBtn.disabled = false;
         
         updateActionButtonsState();
         updateHistoryUI();
@@ -1859,7 +1791,6 @@ MODE 3: ITERATIVE REFINEMENT & POSE
 
       previewContainer.style.display = 'none';
       downloadLink.style.display = 'none';
-      exportBtn.disabled = true;
 
       while (modelGroup.children.length > 0) {
         const obj = modelGroup.children[0];
@@ -1898,3 +1829,4 @@ MODE 3: ITERATIVE REFINEMENT & POSE
   </script>
 </body>
 </html>
+
