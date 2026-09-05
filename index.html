@@ -460,7 +460,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: หุ่นยนต์แมวอวกาศ หรือสั่งต่อยอด: เติมดาบเลเซอร์ที่มือขวา, เปลี่ยนสีเสื้อเป็นสีเขียว"></textarea>
+      placeholder="ตัวอย่าง: Firey บอลไฟกลมอ้วน 3D หรือ หุ่นยนต์แมวอวกาศ"></textarea>
 
     <!-- Smart Pose Library -->
     <div id="pose-container">
@@ -670,7 +670,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec ที่รองรับ Hierarchy, Tube Curves และ Plane
+    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ Ultra-Smooth High-Fidelity Geometry
     function renderModel(spec) {
       deselectPart();
 
@@ -695,38 +695,38 @@
             p.radiusTop !== undefined ? p.radiusTop : 0.5,
             p.radiusBottom !== undefined ? p.radiusBottom : 0.5,
             p.height || 1,
-            p.radialSegments || 32
+            p.radialSegments || 48
           );
         } else if (item.type === 'sphere') {
           geometry = new THREE.SphereGeometry(
             p.radius || 0.5,
-            p.widthSegments || 32,
-            p.heightSegments || 16
+            p.widthSegments || 48,
+            p.heightSegments || 32
           );
         } else if (item.type === 'cone') {
           geometry = new THREE.ConeGeometry(
             p.radius || 0.5,
             p.height || 1,
-            p.radialSegments || 32
+            p.radialSegments || 48
           );
         } else if (item.type === 'torus') {
           geometry = new THREE.TorusGeometry(
             p.radius || 0.5,
             p.tube || 0.2,
-            p.radialSegments || 16,
-            p.tubularSegments || 32
+            p.radialSegments || 32,
+            p.tubularSegments || 48
           );
         } else if (item.type === 'capsule') {
           geometry = new THREE.CapsuleGeometry(
             p.radius || 0.5,
             p.length || 1,
-            p.capSubdivisions || 8,
-            p.radialSegments || 16
+            p.capSubdivisions || 16,
+            p.radialSegments || 32
           );
         } else if (item.type === 'lathe') {
           const rawPoints = (p.points && Array.isArray(p.points) && p.points.length > 1) ? p.points : [[0, 0], [0.5, 0.5], [0.3, 1], [0, 1]];
           const points = rawPoints.map(pt => new THREE.Vector2(Math.max(0, pt[0]), pt[1]));
-          geometry = new THREE.LatheGeometry(points, p.segments || 32);
+          geometry = new THREE.LatheGeometry(points, p.segments || 48);
         } else if (item.type === 'extrude') {
           const shape = new THREE.Shape();
           const pts = (p.shape && Array.isArray(p.shape) && p.shape.length >= 3) ? p.shape : [[0, 0], [1, 0], [0.5, 1]];
@@ -737,12 +737,12 @@
           shape.closePath();
 
           const extrudeSettings = {
-            depth: p.depth !== undefined ? p.depth : 0.2,
+            depth: p.depth !== undefined ? p.depth : 0.35,
             bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
-            bevelSegments: p.bevelSegments || 2,
-            steps: 1,
-            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.03,
-            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.03
+            bevelSegments: p.bevelSegments || 6,
+            steps: 2,
+            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.05,
+            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.05
           };
           geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         } else if (item.type === 'tube') {
@@ -752,9 +752,9 @@
           const curve = new THREE.CatmullRomCurve3(rawPath);
           geometry = new THREE.TubeGeometry(
             curve,
-            p.tubularSegments || 24,
+            p.tubularSegments || 48,
             p.radius || 0.035,
-            p.radialSegments || 8,
+            p.radialSegments || 16,
             p.closed || false
           );
         } else if (item.type === 'plane') {
@@ -1103,20 +1103,29 @@
     }
 
     const SYSTEM_PROMPT = `
-You are "PolyMorph 3D" — an elite Procedural 3D Geometry, Multi-View Spatial Reconstruction, and Kinematic Posing Engine.
-Your mission is to transform user prompts, 2D reference images (Front and Side views), OR kinematic posing commands into production-grade procedural 3D models using Three.js primitive and spline geometry schemas.
+You are "PolyMorph 3D Master Sculptor" — an elite Procedural 3D Geometry and High-Fidelity Character Modeling Engine.
+Your core mission is to construct FULL VOLUMETRIC 3D DIGITAL FIGURINES (Vinyl toy / Pixar / CGI quality) from 2D images or text.
+
+STRICT DESIGN MANDATES:
+1. NEVER CREATE FLAT 2D CARDBOARD CUTOUTS OR FLAT PLAQUES:
+   - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, volumetric compound forms, organic tapered lobes).
+   - An object must have substantial 360-degree volume: depth (Z-axis) must be proportional to width (X-axis) and height (Y-axis), typically depth >= 0.75 * width!
+2. HIGH PART DENSITY & MICRO-DETAILS:
+   - Do not settle for 5-10 simple pieces. Produce an intricate, high-fidelity character composed of 30 to 70 distinct parts.
+   - Sculpt detailed facial expressions: curved eye sockets, layered eyeballs (sclera + pupils + highlight glint spheres), expressive 3D spline mouth ("tube"), cheeks, and brow contours.
+   - For flames (like Firey): construct the fiery body from a round volumetric base core ("sphere" or "capsule") intersected with 5 to 10 overlapping fiery petal lobes and flame tips stretching upward and backward in true 3D space!
 
 OUTPUT FORMAT REQUIREMENTS:
-- You MUST output ONLY a valid JSON object matching the schema below.
-- NEVER wrap the output in markdown code blocks like \`\`\`json. Output raw JSON only.
-- No conversational text, explanations, or commentary.
+- Output ONLY valid, raw JSON matching the schema below.
+- NEVER wrap in markdown blocks like \`\`\`json. Output clean JSON only.
+- No conversational text or markdown explanation.
 
 JSON SCHEMA:
 {
   "objects": [
     {
-      "id": "unique_string_id", // e.g. "torso", "head", "upper_arm_l", "lower_arm_l", "leg_r"
-      "parent": "parent_id_or_null", // Root parts use null. Sub-parts inherit parent transform!
+      "id": "unique_string_id",
+      "parent": "parent_id_or_null",
       "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
       "parameters": {
         // box: "width": float, "height": float, "depth": float
@@ -1131,9 +1140,9 @@ JSON SCHEMA:
         // plane: "width": float, "height": float
         // dodecahedron / icosahedron: "radius": float
       },
-      "position": [x, y, z], // local position relative to parent (or world if no parent)
-      "rotation": [rotX, rotY, rotZ], // In radians
-      "scale": [scaleX, scaleY, scaleZ], // optional, default [1, 1, 1]
+      "position": [x, y, z],
+      "rotation": [rotX, rotY, rotZ],
+      "scale": [scaleX, scaleY, scaleZ],
       "color": "#hexcode",
       "metalness": float_0_to_1,
       "roughness": float_0_to_1
@@ -1142,61 +1151,29 @@ JSON SCHEMA:
 }
 
 ==================================================
-MODE 1: MULTI-VIEW & 2D IMAGE TO 3D CONVERSION
+MODE 1: VOLUMETRIC RECONSTRUCTION FROM 2D IMAGES
 ==================================================
-When 2D images are provided:
-1. DUAL-VIEW INTEGRATION (FRONT + SIDE):
-   - If BOTH Front View and Side View are provided:
-     * FRONT VIEW: dictates X (width), Y (height), facial expressions, decals, limb width, and primary color layout.
-     * SIDE VIEW: dictates Z (depth / thickness), spine curvature, snout/nose protrusion, backpack/tail placement, and front-to-back profile.
-     * Reconcile both images to form a fully rounded, anatomically accurate 3D model with zero flat guesswork!
-2. SILHOUETTE EXTRUSION WITH BEVEL:
-   - Identify the main outline contour. Use "extrude" with a multi-point polygon shape (at least 8-24 points).
-   - Set "depth" to create tactile volume (0.2 to 0.45).
-   - ALWAYS enable bevel: "bevelEnabled": true, "bevelThickness": 0.03 to 0.06, "bevelSize": 0.03 to 0.05.
-3. Z-AXIS DEPTH STACKING:
-   - Background elements: Z = -0.15 to -0.3
-   - Main Torso / Silhouette: Centered around Z = 0
-   - Facial features / Decals: Anchor to body/head with parent, placed slightly proud on front surface (Z = +0.12 to +0.22).
-4. 2D LINE STROKES & LIMBS TO 3D SPLINES ("tube"):
-   - Cartoon arms, legs, antennae, and facial lines must be converted into 3D smooth paths using "tube" (radius: 0.025 to 0.045).
+1. SCULPTING IN TRUE ROUNDED 3D:
+   - Identify main mass: use "sphere" or "capsule" with scale [sx, sy, sz] to establish a round, plump, tactile core.
+   - For organic / flame / creature heads: build the silhouette using intersecting 3D curved shapes so it is thick, rounded, and attractive from front, side, and back!
+2. MULTI-VIEW RECONCILIATION:
+   - If both Front and Side views are given, match both silhouettes into a single coherent 3D sculpture.
+   - If only Front view is given, invent the natural depth (Z-thickness) assuming a plush toy or vinyl figurine proportions.
+3. DETAILED FACIAL FEATURES:
+   - Eyes: curved spheres or beveled discs anchored to the front contour with parent="head" or "body".
+   - Limbs: smooth 3D splines ("tube") with natural bend angles.
 
 ==================================================
-MODE 2: 3D FROM SCRATCH (TEXT-TO-3D)
+MODE 2: 3D FROM TEXT PROMPT
 ==================================================
-When starting a brand new model from text:
-1. ANATOMY & STRUCTURE: Decompose into primary volumes. Center of mass at [0, Y, 0]. Feet/base near Y ≈ 0.
-2. ORGANIC SHAPES: For round characters use spheres, capsules, and tubes. For mechanical/furniture use beveled boxes, cylinders, and lathe.
-3. MATERIALS: Vibrant cartoon colors, metalness 0.7-0.9 for metals, 0.0-0.1 for matte/skin/cloth.
+1. Construct organic creatures with rich volume, lively posture, and tactile materials.
+2. Ground contact: Lowest feet or base resting near Y = 0. Center of mass centered at X = 0, Z = 0.
 
 ==================================================
-MODE 3: ITERATIVE REFINEMENT (DELTA UPDATE)
+MODE 3: ITERATIVE REFINEMENT & POSE
 ==================================================
-When existing 3D model JSON is provided with user modifications:
-1. PRESERVE EXISTING WORK: Retain existing object IDs, hierarchy, and shapes unless requested to alter, recolor, reposition, or delete.
-2. ADDING ACCESSORIES: Create unique IDs, link to parent (e.g. hat -> parent: "head", sword -> parent: "hand_r").
-3. FULL COMPOSITION: Always return the full, valid JSON containing all retained, updated, and newly added objects.
-
-==================================================
-MODE 4: KINEMATIC POSE ADJUSTMENT (SMART POSE LIBRARY)
-==================================================
-When instructed to adjust the character's POSE (e.g. Running, Sitting, Waving, Standing):
-1. KEEP IDENTITY & GEOMETRY INTACT:
-   - Do NOT change types, parameters, colors, or materials of existing parts.
-   - Do NOT delete or rename existing object IDs.
-2. ANATOMICAL ROTATIONS & OFFSETS:
-   - Adjust ONLY "rotation" (in radians) and minor local "position" offsets of limb child parts (arms, forearms, legs, head, feet, spine).
-   - "stand": Neutral standing posture, arms at sides, legs straight downward.
-   - "run": Dynamic running pose. Left arm swinging forward, right arm swinging back. Left leg forward with knee bent, right leg trailing back. Torso tilted forward slightly (rotation.x ~ 0.15 to 0.25).
-   - "sit": Sitting pose. Hip/thighs bent forward 90 degrees (rotation.x ~ 1.57), knees bent downward 90 degrees. Main root position lowered so buttocks rest on ground or chair height.
-   - "wave": Waving pose. One arm (e.g. right arm) raised upward with elbow bent, hand oriented forward/upward, head tilted slightly toward viewer.
-
-==================================================
-CRITICAL COMPOSITION RULES:
-==================================================
-1. PARENT-CHILD ORDER: Always declare parent parts BEFORE children in the "objects" array.
-2. SYMMETRY & OFFSETS: Symmetrical features have matching absolute values for X (+X right, -X left).
-3. NO EMPTY MODELS: Rich composition composed of 12 to 45 distinct parts for full fidelity.
+1. Retain existing geometry and object IDs when making modifications, only updating targeted properties or appending new accessories.
+2. For pose requests (Stand, Run, Sit, Wave): adjust rotations of joints and limb parts naturally while keeping anatomy intact.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -1226,7 +1203,6 @@ CRITICAL COMPOSITION RULES:
 
       const parts = [];
 
-      // ใส่ภาพมุมหน้า
       if (frontImageBase64) {
         parts.push({
           inline_data: {
@@ -1236,7 +1212,6 @@ CRITICAL COMPOSITION RULES:
         });
       }
 
-      // ใส่ภาพมุมข้าง
       if (sideImageBase64) {
         parts.push({
           inline_data: {
@@ -1251,20 +1226,20 @@ CRITICAL COMPOSITION RULES:
 
       if (currentSpec) {
         actionLabel = prompt || 'ปรับปรุงรายละเอียดโมเดลเพิ่มเติม';
-        userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Please modify, add, recolor, or delete parts from the current model JSON according to the instructions. Maintain existing parts and parent-child links that were not asked to change. Output the full updated JSON.`;
+        userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Maintain full 3D volumetric roundness, rich micro-details, and existing object IDs. Output the full updated JSON.`;
       } else {
         if (frontImageBase64 && sideImageBase64) {
           actionLabel = prompt ? `แปลงภาพ Multi-View (หน้า+ข้าง) + ${prompt}` : 'แปลงภาพ Multi-View (หน้า+ข้าง) เป็น 3D Model';
-          userText = `วิเคราะห์ภาพอ้างอิง 2 มุมมอง (Multi-View Reference) พร้อมกัน:\n- รูปภาพแรกคือ "มุมมองด้านหน้า (Front View)": ใช้กำหนดความกว้าง (X), ความสูง (Y), สัดส่วนหน้าตา แขนขา และสีสัน\n- รูปภาพที่สองคือ "มุมมองด้านข้าง (Side View)": ใช้กำหนดความหนาและความลึก (Z), ความโค้งเว้าของสรีระ, และความยื่นขององค์ประกอบ\nผสานโครงสร้าง 3D ออกมาอย่างสมบูรณ์แบบโดยไม่ต้องเดาความลึก ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
+          userText = `วิเคราะห์ภาพอ้างอิง 2 มุมมอง (Front + Side): ปั้นโมเดลเป็นทรง 3D หนา อวบอ้วนรอบทิศทาง (Full Volumetric 3D Sculpting) ห้ามทำเป็นแผ่นแบน ปั้นรายละเอียดหน้าตา แขนขา และเปลวไฟ/อวัยวะให้มีมิติลึกซ้อนชั้นระดับไฮเอนด์ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
         } else if (frontImageBase64) {
           actionLabel = prompt ? `แปลงภาพ 2D (หน้า) + ${prompt}` : 'แปลงรูปภาพ 2D เป็น 3D Model';
-          userText = `วิเคราะห์รูปภาพ 2D นี้อย่างละเอียด: ดึงโครงสร้างเส้นรอบรูป (Silhouette) ของตัวละครหรือวัตถุหลักออกมาเป็นทรง 3D หนาแบบมีขอบมน (Extrude with Bevel) แยกเลเยอร์ความลึกแกน Z ของชิ้นส่วนหน้าตา แขนขา และเครื่องประดับให้ลอยนูนขึ้นมามีมิติ แขนขาทำเป็นท่อโค้ง 3 มิติ (Tube Spline) เก็บสีสันและความเงาตามภาพต้นฉบับอย่างแม่นยำ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
+          userText = `วิเคราะห์รูปภาพ 2D นี้: เปลี่ยนตัวละครในภาพให้กลายเป็นฟิกเกอร์ 3D เต็มตัวที่มีความหนา อ้วนกลมมนรอบทิศทาง (Full 360-degree Volume) ห้ามทำเป็นแผ่นแบน Extrude แผ่นเดียว ปั้นลูกตา เบ้าตา รอยยิ้ม และสรีระส่วนโค้งเว้าด้วยรูปทรงกลม/แคปซูล/ท่อโค้งซ้อนกันอย่างประณีต ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
         } else if (sideImageBase64) {
           actionLabel = prompt ? `แปลงภาพ 2D (ข้าง) + ${prompt}` : 'แปลงรูปภาพมุมข้าง 2D เป็น 3D Model';
-          userText = `วิเคราะห์รูปภาพมุมข้าง 2D นี้อย่างละเอียด: ดึงโครงสร้างสรีระและความหนาแกน Z ของวัตถุหลักออกมาเป็นทรง 3D พร้อมประกอบรายละเอียดรอบตัว ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
+          userText = `วิเคราะห์รูปภาพมุมข้าง 2D นี้: ดึงโครงสร้างสรีระและความหนาแกน Z ของวัตถุหลักออกมาเป็นทรง 3D รอบทิศทาง ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
         } else {
           actionLabel = prompt;
-          userText = prompt;
+          userText = `สร้างโมเดล 3D คุณภาพสูงที่มีมิติความหนา อวบอิ่มรอบทิศทาง รายละเอียดครบถ้วน: ${prompt}`;
         }
       }
 
@@ -1441,14 +1416,12 @@ CRITICAL COMPOSITION RULES:
       deselectPart();
       promptInput.value = '';
       
-      // Clear front image
       imageInputFront.value = '';
       frontImageBase64 = null;
       frontImageMimeType = null;
       uploadedPreviewContainerFront.style.display = 'none';
       uploadedImagePreviewFront.src = '';
 
-      // Clear side image
       imageInputSide.value = '';
       sideImageBase64 = null;
       sideImageMimeType = null;
