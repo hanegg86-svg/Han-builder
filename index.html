@@ -219,7 +219,8 @@
     }
 
     /* Smart Pose Library Panel */
-    #pose-container {
+    #pose-container,
+    #sticker-container {
       background: #1c2430;
       border: 1px solid #2d3748;
       border-radius: 6px;
@@ -228,25 +229,36 @@
       flex-direction: column;
       gap: 8px;
     }
-    #pose-title {
+    #pose-title,
+    #sticker-title {
       font-size: 13px;
       font-weight: bold;
       color: #60a5fa;
     }
-    .pose-grid {
+    .pose-grid,
+    .sticker-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
     }
-    .pose-btn {
+    .pose-btn,
+    .sticker-btn {
       padding: 8px 10px;
       font-size: 12px;
       background: #374151;
       border-radius: 4px;
       font-weight: normal;
     }
-    .pose-btn:hover:not(:disabled) {
+    .pose-btn:hover:not(:disabled),
+    .sticker-btn:hover:not(:disabled) {
       background: #4b5563;
+    }
+    #sticker-remove-btn {
+      grid-column: span 2;
+      background: #4b2323;
+    }
+    #sticker-remove-btn:hover:not(:disabled) {
+      background: #6b2a2a;
     }
 
     /* Inspector ปรับแต่งชิ้นส่วน 3D */
@@ -462,6 +474,18 @@
       data-testid="prompt-input" 
       placeholder="ตัวอย่าง: Firey บอลไฟกลมอ้วน 3D หรือ หุ่นยนต์แมวอวกาศ"></textarea>
 
+    <!-- Face Sticker / Decal Panel -->
+    <div id="sticker-container">
+      <div id="sticker-title">😊 สติกเกอร์หน้าตาแนบผิว (Face Decal):</div>
+      <div class="sticker-grid">
+        <button id="sticker-happy-btn" class="sticker-btn" type="button" disabled>😄 BFDI ยิ้มกว้าง</button>
+        <button id="sticker-shock-btn" class="sticker-btn" type="button" disabled>😮 BFDI ตกใจ</button>
+        <button id="sticker-angry-btn" class="sticker-btn" type="button" disabled>😠 BFDI โกรธ</button>
+        <button id="sticker-cute-btn" class="sticker-btn" type="button" disabled>🥺 ตาหวานอนิเมะ</button>
+        <button id="sticker-remove-btn" class="sticker-btn" type="button" disabled>❌ ลบสติกเกอร์หน้าตา</button>
+      </div>
+    </div>
+
     <!-- Smart Pose Library -->
     <div id="pose-container">
       <div id="pose-title">🏃 Smart Pose Library (จัดท่าทางอัตโนมัติ):</div>
@@ -632,8 +656,12 @@
       if (obj.geometry) obj.geometry.dispose();
       if (obj.material) {
         if (Array.isArray(obj.material)) {
-          obj.material.forEach(m => m.dispose());
+          obj.material.forEach(m => {
+            if (m.map) m.map.dispose();
+            m.dispose();
+          });
         } else {
+          if (obj.material.map) obj.material.map.dispose();
           obj.material.dispose();
         }
       }
@@ -824,6 +852,14 @@
     const historyBox = document.getElementById('history-box');
     const historyList = document.getElementById('history-list');
 
+    // Sticker Buttons
+    const stickerHappyBtn = document.getElementById('sticker-happy-btn');
+    const stickerShockBtn = document.getElementById('sticker-shock-btn');
+    const stickerAngryBtn = document.getElementById('sticker-angry-btn');
+    const stickerCuteBtn = document.getElementById('sticker-cute-btn');
+    const stickerRemoveBtn = document.getElementById('sticker-remove-btn');
+    const stickerButtons = [stickerHappyBtn, stickerShockBtn, stickerAngryBtn, stickerCuteBtn, stickerRemoveBtn];
+
     // Pose Buttons
     const poseStandBtn = document.getElementById('pose-stand-btn');
     const poseRunBtn = document.getElementById('pose-run-btn');
@@ -857,9 +893,10 @@
     let sideImageBase64 = null;
     let sideImageMimeType = null;
 
-    function updatePoseButtonsState() {
+    function updateActionButtonsState() {
       const hasModel = currentSpec !== null;
       poseButtons.forEach(btn => btn.disabled = !hasModel);
+      stickerButtons.forEach(btn => btn.disabled = !hasModel);
     }
 
     function updateHistoryUI() {
@@ -1032,6 +1069,199 @@
       }
     });
 
+    // ==========================================
+    // ระบบสติกเกอร์หน้าตาแนบผิว 2D Decal Canvas
+    // ==========================================
+    function createFaceCanvas(type) {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, 512, 512);
+
+      if (type === 'bfdi_happy') {
+        // ตาขีดรีสไตล์ BFDI
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.ellipse(170, 190, 16, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(342, 190, 16, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ปากยิ้มกว้างเห็นฟันขาวแบบ BFDI
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(256, 250, 100, 0.15 * Math.PI, 0.85 * Math.PI, false);
+        ctx.closePath();
+        ctx.fillStyle = '#991b1b';
+        ctx.fill();
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
+
+        // ฟันขาวด้านบน
+        ctx.clip();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(150, 250, 212, 35);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(150, 250, 212, 35);
+        ctx.restore();
+
+      } else if (type === 'bfdi_shock') {
+        // ตาโตตกใจ
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(170, 180, 26, 0, Math.PI * 2);
+        ctx.arc(342, 180, 26, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ปากอ้ากลมรูปตัว O
+        ctx.beginPath();
+        ctx.ellipse(256, 300, 48, 62, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+
+      } else if (type === 'bfdi_angry') {
+        // คิ้วเฉียงโกรธ
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(130, 150);
+        ctx.lineTo(210, 190);
+        ctx.moveTo(382, 150);
+        ctx.lineTo(302, 190);
+        ctx.stroke();
+
+        // ลูกตาดำ
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.ellipse(175, 210, 16, 24, 0, 0, Math.PI * 2);
+        ctx.ellipse(337, 210, 16, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ปากกัดฟันโกรธ
+        ctx.beginPath();
+        ctx.roundRect(170, 290, 172, 45, 10);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = 10;
+        ctx.stroke();
+
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(170, 312);
+        ctx.lineTo(342, 312);
+        ctx.moveTo(215, 290);
+        ctx.lineTo(215, 335);
+        ctx.moveTo(256, 290);
+        ctx.lineTo(256, 335);
+        ctx.moveTo(297, 290);
+        ctx.lineTo(297, 335);
+        ctx.stroke();
+
+      } else if (type === 'cute') {
+        // ตากลมโตประกายอนิเมะ
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.ellipse(170, 190, 36, 48, 0, 0, Math.PI * 2);
+        ctx.ellipse(342, 190, 36, 48, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // แววตาสีขาว
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(160, 175, 14, 0, Math.PI * 2);
+        ctx.arc(332, 175, 14, 0, Math.PI * 2);
+        ctx.arc(180, 205, 8, 0, Math.PI * 2);
+        ctx.arc(352, 205, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // แก้มชมพูระเรื่อ
+        ctx.fillStyle = 'rgba(244, 114, 182, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(135, 240, 25, 14, 0, 0, Math.PI * 2);
+        ctx.ellipse(377, 240, 25, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ปากยิ้มเล็กน่ารัก
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(256, 260, 24, 0.1 * Math.PI, 0.9 * Math.PI, false);
+        ctx.stroke();
+      }
+
+      return c;
+    }
+
+    function applyFaceSticker(type) {
+      if (!currentSpec) {
+        setStatus('error', 'กรุณาสร้างโมเดล 3D ก่อนจึงจะแปะสติกเกอร์หน้าตาได้');
+        return;
+      }
+
+      // ลบสติกเกอร์เดิมออกก่อน
+      const existingSticker = modelGroup.getObjectByName('face_sticker');
+      if (existingSticker) {
+        disposeObject(existingSticker);
+        modelGroup.remove(existingSticker);
+      }
+
+      if (type === 'remove') {
+        setStatus('ready', 'ลบสติกเกอร์หน้าตาเรียบร้อย');
+        updatePreviewSnapshot();
+        return;
+      }
+
+      // คำนวณ Bounding Box ของโมเดลเพื่อแนบสติกเกอร์ไว้ที่ผิวหน้าสุด
+      const box = new THREE.Box3().setFromObject(modelGroup);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+
+      const stickerWidth = Math.max(size.x * 0.75, 0.6);
+      const stickerHeight = stickerWidth;
+      const stickerGeometry = new THREE.PlaneGeometry(stickerWidth, stickerHeight);
+
+      const faceCanvas = createFaceCanvas(type);
+      const faceTexture = new THREE.CanvasTexture(faceCanvas);
+      faceTexture.needsUpdate = true;
+
+      const stickerMaterial = new THREE.MeshStandardMaterial({
+        map: faceTexture,
+        transparent: true,
+        alphaTest: 0.05,
+        polygonOffset: true,
+        polygonOffsetFactor: -4,
+        polygonOffsetUnits: -4,
+        roughness: 0.5,
+        metalness: 0.0,
+        side: THREE.DoubleSide
+      });
+
+      const stickerMesh = new THREE.Mesh(stickerGeometry, stickerMaterial);
+      stickerMesh.name = 'face_sticker';
+      stickerMesh.userData = { id: 'face_sticker' };
+
+      // วางไว้ที่กึ่งกลางหน้า และดันตำแหน่ง Z ให้อยู่เหนือผิวหน้าสุดเล็กน้อย (Z-Max + 0.03)
+      stickerMesh.position.set(center.x, center.y + size.y * 0.05, box.max.z + 0.03);
+      modelGroup.add(stickerMesh);
+
+      selectPart(stickerMesh);
+      setStatus('ready', `แปะสติกเกอร์หน้าตาสำเร็จ! สามารถใช้ปุ่ม "ย้าย" หรือ "ขยาย" ปรับตำแหน่งได้ตามต้องการ`);
+      updatePreviewSnapshot();
+    }
+
+    stickerHappyBtn.addEventListener('click', () => applyFaceSticker('bfdi_happy'));
+    stickerShockBtn.addEventListener('click', () => applyFaceSticker('bfdi_shock'));
+    stickerAngryBtn.addEventListener('click', () => applyFaceSticker('bfdi_angry'));
+    stickerCuteBtn.addEventListener('click', () => applyFaceSticker('cute'));
+    stickerRemoveBtn.addEventListener('click', () => applyFaceSticker('remove'));
+
     const savedApiKey = localStorage.getItem('gemini_api_key');
     if (savedApiKey) {
       apiKeyInput.value = savedApiKey;
@@ -1113,7 +1343,7 @@ STRICT DESIGN MANDATES:
 2. HIGH PART DENSITY & MICRO-DETAILS:
    - Do not settle for 5-10 simple pieces. Produce an intricate, high-fidelity character composed of 30 to 70 distinct parts.
    - Sculpt detailed facial expressions: curved eye sockets, layered eyeballs (sclera + pupils + highlight glint spheres), expressive 3D spline mouth ("tube"), cheeks, and brow contours.
-   - For flames (like Firey): construct the fiery body from a round volumetric base core ("sphere" or "capsule") intersected with 5 to 10 overlapping fiery petal lobes and flame tips stretching upward and backward in true 3D space!
+   - Ensure facial features have their local Z-coordinates positioned well proud of the surface so they never clip inside the body.
 
 OUTPUT FORMAT REQUIREMENTS:
 - Output ONLY valid, raw JSON matching the schema below.
@@ -1196,6 +1426,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
       resetBtn.disabled = true;
       exportBtn.disabled = true;
       poseButtons.forEach(btn => btn.disabled = true);
+      stickerButtons.forEach(btn => btn.disabled = true);
       downloadLink.style.display = 'none';
       previewContainer.style.display = 'none';
 
@@ -1230,10 +1461,10 @@ MODE 3: ITERATIVE REFINEMENT & POSE
       } else {
         if (frontImageBase64 && sideImageBase64) {
           actionLabel = prompt ? `แปลงภาพ Multi-View (หน้า+ข้าง) + ${prompt}` : 'แปลงภาพ Multi-View (หน้า+ข้าง) เป็น 3D Model';
-          userText = `วิเคราะห์ภาพอ้างอิง 2 มุมมอง (Front + Side): ปั้นโมเดลเป็นทรง 3D หนา อวบอ้วนรอบทิศทาง (Full Volumetric 3D Sculpting) ห้ามทำเป็นแผ่นแบน ปั้นรายละเอียดหน้าตา แขนขา และเปลวไฟ/อวัยวะให้มีมิติลึกซ้อนชั้นระดับไฮเอนด์ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
+          userText = `วิเคราะห์ภาพอ้างอิง 2 มุมมอง (Front + Side): ปั้นโมเดลเป็นทรง 3D หนา อวบอ้วนรอบทิศทาง (Full Volumetric 3D Sculpting) ห้ามทำเป็นแผ่นแบน ปั้นรายละเอียดหน้าตา แขนขา และอวัยวะให้มีมิติลึกซ้อนชั้นระดับไฮเอนด์ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
         } else if (frontImageBase64) {
           actionLabel = prompt ? `แปลงภาพ 2D (หน้า) + ${prompt}` : 'แปลงรูปภาพ 2D เป็น 3D Model';
-          userText = `วิเคราะห์รูปภาพ 2D นี้: เปลี่ยนตัวละครในภาพให้กลายเป็นฟิกเกอร์ 3D เต็มตัวที่มีความหนา อ้วนกลมมนรอบทิศทาง (Full 360-degree Volume) ห้ามทำเป็นแผ่นแบน Extrude แผ่นเดียว ปั้นลูกตา เบ้าตา รอยยิ้ม และสรีระส่วนโค้งเว้าด้วยรูปทรงกลม/แคปซูล/ท่อโค้งซ้อนกันอย่างประณีต ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
+          userText = `วิเคราะห์รูปภาพ 2D นี้: เปลี่ยนตัวละครในภาพให้กลายเป็นฟิกเกอร์ 3D เต็มตัวที่มีความหนา อ้วนกลมมนรอบทิศทาง (Full 360-degree Volume) ห้ามทำเป็นแผ่นแบน Extrude แผ่นเดียว ปั้นสรีระส่วนโค้งเว้าด้วยรูปทรงกลม/แคปซูล/ท่อโค้งซ้อนกันอย่างประณีต ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
         } else if (sideImageBase64) {
           actionLabel = prompt ? `แปลงภาพ 2D (ข้าง) + ${prompt}` : 'แปลงรูปภาพมุมข้าง 2D เป็น 3D Model';
           userText = `วิเคราะห์รูปภาพมุมข้าง 2D นี้: ดึงโครงสร้างสรีระและความหนาแกน Z ของวัตถุหลักออกมาเป็นทรง 3D รอบทิศทาง ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
@@ -1297,7 +1528,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
       } finally {
         generateBtn.disabled = false;
         resetBtn.disabled = false;
-        updatePoseButtonsState();
+        updateActionButtonsState();
         updateHistoryUI();
         updateUndoButtonState();
       }
@@ -1321,6 +1552,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
       resetBtn.disabled = true;
       exportBtn.disabled = true;
       poseButtons.forEach(btn => btn.disabled = true);
+      stickerButtons.forEach(btn => btn.disabled = true);
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
 
@@ -1368,7 +1600,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
       } finally {
         generateBtn.disabled = false;
         resetBtn.disabled = false;
-        updatePoseButtonsState();
+        updateActionButtonsState();
         updateHistoryUI();
         updateUndoButtonState();
       }
@@ -1402,7 +1634,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
         setStatus('ready', `ย้อนกลับไปยังทรงก่อนหน้าเรียบร้อย (ขั้นตอนที่ ${promptSession.length})`);
         exportBtn.disabled = false;
         
-        updatePoseButtonsState();
+        updateActionButtonsState();
         updateHistoryUI();
         updateUndoButtonState();
       }
@@ -1439,7 +1671,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
       }
       renderer.render(scene, camera);
 
-      updatePoseButtonsState();
+      updateActionButtonsState();
       updateHistoryUI();
       updateUndoButtonState();
       setStatus('idle', 'ล้างข้อมูลโมเดลและคำสั่งเรียบร้อย เริ่มต้นใหม่ได้ทันที');
