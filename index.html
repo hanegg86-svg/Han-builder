@@ -485,11 +485,11 @@
 
           const extrudeSettings = {
             depth: p.depth !== undefined ? p.depth : 0.2,
-            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : false,
-            bevelSegments: p.bevelSegments || 1,
+            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
+            bevelSegments: p.bevelSegments || 2,
             steps: 1,
-            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.02,
-            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.02
+            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.03,
+            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.03
           };
           geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         } else if (item.type === 'tube') {
@@ -611,31 +611,36 @@
     }
 
     const SYSTEM_PROMPT = `
-You are an advanced procedural 3D modeling engine with support for Parent-Child Hierarchy and Spline Curves.
-Faithfully convert the user's reference image or natural language prompt into a structured 3D layout.
+You are "PolyMorph 3D" — an elite Procedural 3D Geometry and Spatial Reconstruction Engine.
+Your mission is to transform user prompts OR 2D reference images into production-grade procedural 3D models using Three.js primitive and spline geometry schemas.
 
-You MUST output ONLY a valid JSON object matching this schema:
+OUTPUT FORMAT REQUIREMENTS:
+- You MUST output ONLY a valid JSON object matching the schema below.
+- NEVER wrap the output in markdown code blocks like \`\`\`json. Output raw JSON only.
+- No conversational text, explanations, or commentary.
+
+JSON SCHEMA:
 {
   "objects": [
     {
-      "id": "unique_string_id", // e.g. "body", "head", "arm_left", "eye_right"
-      "parent": "parent_id_or_null", // OPTIONAL: if specified, position and rotation are relative to this parent object!
+      "id": "unique_string_id", // e.g. "torso", "head", "upper_arm_l", "eye_r"
+      "parent": "parent_id_or_null", // Root parts use null. Sub-parts inherit parent transform!
       "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
       "parameters": {
-        // for box: "width": float, "height": float, "depth": float
-        // for cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
-        // for sphere: "radius": float, "widthSegments": int, "heightSegments": int
-        // for cone: "radius": float, "height": float, "radialSegments": int
-        // for torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
-        // for capsule: "radius": float, "length": float
-        // for lathe: "points": [[x, y], ...], "segments": int
-        // for extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool, "bevelThickness": float, "bevelSize": float
-        // for tube: "path": [[x, y, z], [x, y, z], ...], "radius": float, "tubularSegments": int (smooth 3D curved spline!)
-        // for plane: "width": float, "height": float
-        // for dodecahedron / icosahedron: "radius": float
+        // box: "width": float, "height": float, "depth": float
+        // cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
+        // sphere: "radius": float, "widthSegments": int, "heightSegments": int
+        // cone: "radius": float, "height": float, "radialSegments": int
+        // torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
+        // capsule: "radius": float, "length": float
+        // lathe: "points": [[x, y], ...], "segments": int
+        // extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool, "bevelThickness": float, "bevelSize": float, "bevelSegments": int
+        // tube: "path": [[x, y, z], ...], "radius": float, "tubularSegments": int, "closed": bool
+        // plane: "width": float, "height": float
+        // dodecahedron / icosahedron: "radius": float
       },
       "position": [x, y, z], // local position relative to parent (or world if no parent)
-      "rotation": [rotX_radians, rotY_radians, rotZ_radians],
+      "rotation": [rotX, rotY, rotZ], // In radians
       "scale": [scaleX, scaleY, scaleZ], // optional, default [1, 1, 1]
       "color": "#hexcode",
       "metalness": float_0_to_1,
@@ -644,27 +649,52 @@ You MUST output ONLY a valid JSON object matching this schema:
   ]
 }
 
-ADVANCED MODELING & HIERARCHY GUIDELINES:
-1. PARENT-CHILD LINKING:
-   - Always declare parent parts before children (e.g. root "body" first, then "head" with parent="body", then facial features with parent="head").
-   - When eyes, pupils, eyebrows, smile lines, noses, or hats have parent="head", their position is relative to head origin, preventing clipping and keeping them perfectly anchored.
+==================================================
+MODE 1: 2D IMAGE TO 3D CONVERSION (SPATIAL LIFTING)
+==================================================
+When an image is provided, reconstruct it from 2D flat space into true 3D volume using the "Layered Depth & Bevel" technique:
 
-2. CURVED SPLINES ("tube"):
-   - For cartoon stick limbs (arms, legs), curved tails, eyebrows, smile strokes, or handles, use "tube" with a 3 to 5 point spline path:
-     e.g. arm hanging and bending forward: path: [[0, 0, 0], [-0.1, -0.2, 0.05], [-0.05, -0.4, 0.1]], radius: 0.025 to 0.04, color: #000000.
+1. SILHOUETTE EXTRUSION WITH BEVEL:
+   - Identify the main outline/body contour of the 2D character or object.
+   - Use "extrude" with a multi-point 2D polygon shape (at least 8-24 points outlining the silhouette).
+   - Set "depth" to create tactile volume (0.2 to 0.45).
+   - ALWAYS enable bevel: "bevelEnabled": true, "bevelThickness": 0.03 to 0.06, "bevelSize": 0.03 to 0.05. This eliminates paper-thin sharp edges and gives a soft, tactile 3D figurine look.
 
-3. 2D OBJECT SHOW CHARACTERS (e.g. Pin, Leafy, Coiny from BFDI):
-   - Never turn flat 2D cutouts into 3D lathe cylinders!
-   - Main Body: Use "extrude" with custom 2D polygon shape coordinates and thin depth (0.15 to 0.25).
-     * For Pin: top silver triangle via extrude; red hourglass body via extrude.
-   - Limbs: Thin black tubes (radius 0.025, color #000000) for arms and legs.
-   - Face: Black dots/tubes anchored to the body with parent="body" on the front face (Z ~ +0.12).
+2. Z-AXIS DEPTH STACKING (LAYER SEPARATION):
+   Do NOT place all details on the same flat surface (Z = 0):
+   - Background elements (cape, backpack, hair back): Z = -0.15 to -0.3
+   - Main Torso / Silhouette: Centered around Z = 0
+   - Facial features / Decals (eyes, mouth, nose, buttons): Anchor to the body/head with parent, placed slightly proud on the front surface (e.g., Z = +0.12 to +0.22) so they NEVER z-fight or clip inside.
 
-4. 3D ROUNDED CHARACTERS (Mario, Yoshi, Donkey Kong):
-   - Build anatomy: torso/body as root, head child, limbs child.
-   - Prominent features: protruding snout/muzzle, cap visor, mustache, crests, shell, boots.
+3. 2D LINE STROKES & LIMBS TO 3D SPLINES ("tube"):
+   - Cartoon arms, legs, antennae, outlines, and facial lines must be converted into 3D smooth paths using "tube".
+   - Use 3 to 6 spatial points with slight forward/sideway curves to give gesture and life (radius: 0.025 to 0.045).
 
-Center the main body at origin, keeping ground contact near Y = 0.
+==================================================
+MODE 2: 3D FROM SCRATCH (TEXT-TO-3D)
+==================================================
+When only a text prompt is given:
+1. ANATOMY & STRUCTURE:
+   - Decompose into primary volumes (torso = capsule/box, head = sphere/box, joints = spheres, limbs = capsules/tubes).
+   - Center of mass centered at [0, Y, 0]. Feet/base resting firmly on the ground plane (lowest Y ≈ 0).
+2. ORGANIC SHAPES:
+   - For round/soft characters (Mario, Kirby, animals): Prioritize spheres, capsules, and tubes.
+   - For hard-surface/mechanical models (robots, vehicles, furniture): Prioritize beveled boxes, cylinders, and lathed spindles.
+3. COLOR & MATERIAL HARMONY:
+   - Match vibrant colors for cartoon/anime aesthetics.
+   - Metallic parts: metalness: 0.7 - 0.9, roughness: 0.2 - 0.35.
+   - Matte/Skin/Cloth: metalness: 0.0 - 0.1, roughness: 0.6 - 0.85.
+
+==================================================
+CRITICAL COMPOSITION RULES:
+==================================================
+1. PARENT-CHILD ORDER:
+   - Always declare parent parts BEFORE children in the "objects" array.
+   - Example order: root_body -> head (parent: "root_body") -> hat (parent: "head") -> eye_l (parent: "head").
+2. SYMMETRY & OFFSETS:
+   - Ensure symmetrical features (ears, eyes, arms, legs) have matching absolute values for X (+X for right, -X for left).
+3. NO EMPTY MODELS:
+   - Produce a rich, detailed composition composed of 12 to 45 distinct parts for full visual fidelity.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -699,7 +729,12 @@ Center the main body at origin, keeping ground contact near Y = 0.
         });
       }
 
-      const userText = prompt || 'วิเคราะห์เฉพาะวัตถุหรือตัวละครหลักตรงกลางภาพ ใช้ระบบลำดับชั้น parent-child และรูปทรง tube สำหรับเส้นโค้งแขนขาหรือหน้าตาตามสไตล์ต้นฉบับอย่างสมบูรณ์แบบ';
+      let userText = '';
+      if (currentImageBase64) {
+        userText = `วิเคราะห์รูปภาพ 2D นี้อย่างละเอียด: ดึงโครงสร้างเส้นรอบรูป (Silhouette) ของตัวละครหรือวัตถุหลักออกมาเป็นทรง 3D หนาแบบมีขอบมน (Extrude with Bevel) แยกเลเยอร์ความลึกแกน Z ของชิ้นส่วนหน้าตา แขนขา และเครื่องประดับให้ลอยนูนขึ้นมามีมิติ แขนขาทำเป็นท่อโค้ง 3 มิติ (Tube Spline) เก็บสีสันและความเงาตามภาพต้นฉบับอย่างแม่นยำ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
+      } else {
+        userText = prompt;
+      }
       parts.push({ text: userText });
 
       try {
@@ -734,7 +769,9 @@ Center the main body at origin, keeping ground contact near Y = 0.
           throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
         }
 
-        const specData = JSON.parse(rawText);
+        // คลีน Markdown backticks เพื่อความปลอดภัยในการ parse JSON
+        const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+        const specData = JSON.parse(sanitizedText);
         renderModel(specData);
         
         setStatus('ready', 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
