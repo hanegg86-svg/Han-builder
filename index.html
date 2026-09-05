@@ -284,6 +284,42 @@
       background: #6b2a2a;
     }
 
+    /* แผงปรับตำแหน่งและขนาดสติ๊กเกอร์หน้าตา */
+    #sticker-adjust-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+      padding: 10px;
+      background: #131b26;
+      border-radius: 6px;
+      border: 1px dashed #3b82f6;
+    }
+    .adjust-section-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #93c5fd;
+    }
+    .adjust-grid-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+    .adjust-btn {
+      padding: 8px 4px;
+      font-size: 11px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      color: #f1f5f9;
+      font-weight: normal;
+      text-align: center;
+    }
+    .adjust-btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #60a5fa;
+    }
+
     /* Inspector ปรับแต่งชิ้นส่วน 3D */
     #inspector-container {
       background: #1f2937;
@@ -513,6 +549,30 @@
         <button id="sticker-cute-btn" class="sticker-btn" type="button" disabled>🥺 ตาหวานอนิเมะ</button>
         <button id="sticker-remove-btn" class="sticker-btn" type="button" disabled>❌ ลบสติกเกอร์หน้าตา</button>
       </div>
+
+      <!-- แผงปุ่มปรับแต่งตำแหน่ง/ขนาดสติ๊กเกอร์ -->
+      <div id="sticker-adjust-panel">
+        <div class="adjust-section-title">🕹️ ปรับตำแหน่งสติกเกอร์ (เลื่อนให้ตรงใบหน้า):</div>
+        <div class="adjust-grid-row">
+          <button id="stk-up-btn" class="adjust-btn" type="button">⬆️ ขึ้น</button>
+          <button id="stk-down-btn" class="adjust-btn" type="button">⬇️ ลง</button>
+          <button id="stk-left-btn" class="adjust-btn" type="button">⬅️ ซ้าย</button>
+          <button id="stk-right-btn" class="adjust-btn" type="button">➡️ ขวา</button>
+        </div>
+        <div class="adjust-grid-row">
+          <button id="stk-forward-btn" class="adjust-btn" type="button" title="ดันออกมาข้างหน้ากันจม">⏫ ดันหน้า</button>
+          <button id="stk-backward-btn" class="adjust-btn" type="button" title="ดันเข้าด้านในแนบผิว">⏬ ดันลึก</button>
+          <button id="stk-scale-up-btn" class="adjust-btn" type="button">➕ ขยาย</button>
+          <button id="stk-scale-down-btn" class="adjust-btn" type="button">➖ ย่อ</button>
+        </div>
+        <div class="adjust-section-title">📐 ยืด/หดรูปหน้า & รีเซ็ต:</div>
+        <div class="adjust-grid-row">
+          <button id="stk-stretch-x-plus" class="adjust-btn" type="button">↔️ กว้างขึ้น</button>
+          <button id="stk-stretch-x-minus" class="adjust-btn" type="button">🤏 แคบลง</button>
+          <button id="stk-stretch-y-plus" class="adjust-btn" type="button">↕️ สูงขึ้น</button>
+          <button id="stk-stretch-y-minus" class="adjust-btn" type="button">🤏 สั้นลง</button>
+        </div>
+      </div>
     </div>
 
     <!-- Smart Pose Library -->
@@ -730,6 +790,9 @@
         modelGroup.remove(obj);
       }
 
+      const stickerPanel = document.getElementById('sticker-adjust-panel');
+      if (stickerPanel) stickerPanel.style.display = 'none';
+
       if (!spec.objects || !Array.isArray(spec.objects)) return;
 
       const objectMap = new Map();
@@ -890,6 +953,21 @@
     const stickerRemoveBtn = document.getElementById('sticker-remove-btn');
     const stickerButtons = [stickerHappyBtn, stickerShockBtn, stickerAngryBtn, stickerCuteBtn, stickerRemoveBtn];
 
+    // Sticker Transform Adjustment Elements
+    const stickerAdjustPanel = document.getElementById('sticker-adjust-panel');
+    const stkUpBtn = document.getElementById('stk-up-btn');
+    const stkDownBtn = document.getElementById('stk-down-btn');
+    const stkLeftBtn = document.getElementById('stk-left-btn');
+    const stkRightBtn = document.getElementById('stk-right-btn');
+    const stkForwardBtn = document.getElementById('stk-forward-btn');
+    const stkBackwardBtn = document.getElementById('stk-backward-btn');
+    const stkScaleUpBtn = document.getElementById('stk-scale-up-btn');
+    const stkScaleDownBtn = document.getElementById('stk-scale-down-btn');
+    const stkStretchXPlus = document.getElementById('stk-stretch-x-plus');
+    const stkStretchXMinus = document.getElementById('stk-stretch-x-minus');
+    const stkStretchYPlus = document.getElementById('stk-stretch-y-plus');
+    const stkStretchYMinus = document.getElementById('stk-stretch-y-minus');
+
     // Pose Buttons
     const poseStandBtn = document.getElementById('pose-stand-btn');
     const poseRunBtn = document.getElementById('pose-run-btn');
@@ -923,6 +1001,11 @@
       stickerButtons.forEach(btn => btn.disabled = !hasModel);
       snapPngBtn.disabled = !hasModel;
       exportBtn.disabled = !hasModel;
+
+      const hasSticker = modelGroup.getObjectByName('face_sticker') !== null;
+      if (!hasSticker && stickerAdjustPanel) {
+        stickerAdjustPanel.style.display = 'none';
+      }
     }
 
     function updateHistoryUI() {
@@ -1343,6 +1426,7 @@
       }
 
       if (type === 'remove') {
+        stickerAdjustPanel.style.display = 'none';
         setStatus('ready', 'ลบสติกเกอร์หน้าตาเรียบร้อย');
         updatePreviewSnapshot();
         return;
@@ -1377,14 +1461,66 @@
       stickerMesh.name = 'face_sticker';
       stickerMesh.userData = { id: 'face_sticker' };
 
-      // วางไว้ที่กึ่งกลางหน้า และดันตำแหน่ง Z ให้อยู่เหนือผิวหน้าสุดเล็กน้อย (Z-Max + 0.03)
-      stickerMesh.position.set(center.x, center.y + size.y * 0.05, box.max.z + 0.03);
+      // ตั้งตำแหน่งเริ่มต้น: ขยับแกน Y ขึ้นไปด้านบนช่วงหัว (center.y + 35% ของความสูงโมเดล)
+      stickerMesh.position.set(center.x, center.y + size.y * 0.35, box.max.z + 0.03);
       modelGroup.add(stickerMesh);
 
-      selectPart(stickerMesh);
-      setStatus('ready', `แปะสติกเกอร์หน้าตาสำเร็จเรียบร้อย`);
+      // แสดงแผงปรับแต่งตำแหน่งและสัดส่วน
+      stickerAdjustPanel.style.display = 'flex';
+      setStatus('ready', `แปะสติกเกอร์หน้าตาสำเร็จ! สามารถใช้ปุ่มด้านล่างเลื่อนขึ้น-ลง ขยาย หรือยืดสัดส่วนหน้าได้ตามต้องการ`);
       updatePreviewSnapshot();
     }
+
+    // ฟังก์ชันจัดการขยับตำแหน่งและปรับสเกลของสติ๊กเกอร์หน้าตา
+    function adjustSticker(action) {
+      const sticker = modelGroup.getObjectByName('face_sticker');
+      if (!sticker) return;
+
+      const box = new THREE.Box3().setFromObject(modelGroup);
+      const size = box.getSize(new THREE.Vector3());
+      const moveStep = Math.max(size.y * 0.04, 0.05);
+
+      if (action === 'up') {
+        sticker.position.y += moveStep;
+      } else if (action === 'down') {
+        sticker.position.y -= moveStep;
+      } else if (action === 'left') {
+        sticker.position.x -= moveStep;
+      } else if (action === 'right') {
+        sticker.position.x += moveStep;
+      } else if (action === 'forward') {
+        sticker.position.z += 0.03;
+      } else if (action === 'backward') {
+        sticker.position.z -= 0.03;
+      } else if (action === 'scale_up') {
+        sticker.scale.multiplyScalar(1.1);
+      } else if (action === 'scale_down') {
+        sticker.scale.multiplyScalar(0.9);
+      } else if (action === 'stretch_x_plus') {
+        sticker.scale.x *= 1.1;
+      } else if (action === 'stretch_x_minus') {
+        sticker.scale.x *= 0.9;
+      } else if (action === 'stretch_y_plus') {
+        sticker.scale.y *= 1.1;
+      } else if (action === 'stretch_y_minus') {
+        sticker.scale.y *= 0.9;
+      }
+
+      updatePreviewSnapshot();
+    }
+
+    stkUpBtn.addEventListener('click', () => adjustSticker('up'));
+    stkDownBtn.addEventListener('click', () => adjustSticker('down'));
+    stkLeftBtn.addEventListener('click', () => adjustSticker('left'));
+    stkRightBtn.addEventListener('click', () => adjustSticker('right'));
+    stkForwardBtn.addEventListener('click', () => adjustSticker('forward'));
+    stkBackwardBtn.addEventListener('click', () => adjustSticker('backward'));
+    stkScaleUpBtn.addEventListener('click', () => adjustSticker('scale_up'));
+    stkScaleDownBtn.addEventListener('click', () => adjustSticker('scale_down'));
+    stkStretchXPlus.addEventListener('click', () => adjustSticker('stretch_x_plus'));
+    stkStretchXMinus.addEventListener('click', () => adjustSticker('stretch_x_minus'));
+    stkStretchYPlus.addEventListener('click', () => adjustSticker('stretch_y_plus'));
+    stkStretchYMinus.addEventListener('click', () => adjustSticker('stretch_y_minus'));
 
     stickerHappyBtn.addEventListener('click', () => applyFaceSticker('bfdi_happy'));
     stickerShockBtn.addEventListener('click', () => applyFaceSticker('bfdi_shock'));
@@ -1829,4 +1965,3 @@ MODE 3: ITERATIVE REFINEMENT & POSE
   </script>
 </body>
 </html>
-
