@@ -89,6 +89,12 @@
       background: #555555;
       cursor: not-allowed;
     }
+    #undo-btn {
+      background: #6b7280;
+    }
+    #undo-btn:hover:not(:disabled) {
+      background: #4b5563;
+    }
     #export-glb-btn {
       background: #28a745;
     }
@@ -273,6 +279,7 @@
       placeholder="ตัวอย่าง: หมุดปักกระดาษ Pin BFDI หรือ มาริโอ้วิ่ง หรือ รายละเอียดเพิ่มเติม"></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
+    <button id="undo-btn" data-testid="undo-btn" disabled>↩️ ย้อนกลับทรงก่อนหน้า</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
     
     <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle</div>
@@ -561,10 +568,17 @@
     const removeImageBtn = document.getElementById('remove-image-btn');
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
+    const undoBtn = document.getElementById('undo-btn');
     const exportBtn = document.getElementById('export-glb-btn');
     const appStatus = document.getElementById('app-status');
     const downloadLink = document.getElementById('download-link');
     const previewContainer = document.getElementById('preview-container');
+
+    const modelHistory = [];
+
+    function updateUndoButtonState() {
+      undoBtn.disabled = modelHistory.length <= 1;
+    }
 
     let currentImageBase64 = null;
     let currentImageMimeType = null;
@@ -713,6 +727,7 @@ CRITICAL COMPOSITION RULES:
 
       setStatus('generating', 'Connecting to Gemini API...');
       generateBtn.disabled = true;
+      undoBtn.disabled = true;
       exportBtn.disabled = true;
       downloadLink.style.display = 'none';
       previewContainer.style.display = 'none';
@@ -769,9 +784,10 @@ CRITICAL COMPOSITION RULES:
           throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
         }
 
-        // คลีน Markdown backticks เพื่อความปลอดภัยในการ parse JSON
         const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
         const specData = JSON.parse(sanitizedText);
+        
+        modelHistory.push(specData);
         renderModel(specData);
         
         setStatus('ready', 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
@@ -780,6 +796,19 @@ CRITICAL COMPOSITION RULES:
         setStatus('error', 'เกิดข้อผิดพลาด: ' + err.message);
       } finally {
         generateBtn.disabled = false;
+        updateUndoButtonState();
+      }
+    });
+
+    undoBtn.addEventListener('click', () => {
+      if (modelHistory.length > 1) {
+        modelHistory.pop();
+        const previousSpec = modelHistory[modelHistory.length - 1];
+        renderModel(previousSpec);
+        downloadLink.style.display = 'none';
+        setStatus('ready', 'ย้อนกลับไปยังทรงก่อนหน้าเรียบร้อย');
+        exportBtn.disabled = false;
+        updateUndoButtonState();
       }
     });
 
