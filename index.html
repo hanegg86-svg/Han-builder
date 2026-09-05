@@ -346,7 +346,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder=":  Pin BFDI   "></textarea>
+      placeholder=":  Pin BFDI   "></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
@@ -377,7 +377,7 @@
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
     import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-    // 1.  Service Worker  PWA[span_0](start_span)[span_0](end_span)
+    // 1.  Service Worker  PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
@@ -386,13 +386,13 @@
       });
     }
 
-    // 2.  Three.js Scene, Camera, WebGLRenderer[span_1](start_span)[span_1](end_span)
+    // 2.  Three.js Scene, Camera, WebGLRenderer
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
 
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(5, 5, 7);
+    camera.position.set(4, 4, 6);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -413,14 +413,14 @@
     });
 
     // Toon Gradient Texture 3  Cel-shading
-    const colors = new Uint8Array([70, 160, 255]);
+    const colors = new Uint8Array([80, 175, 255]);
     const format = renderer.capabilities.isWebGL2 ? THREE.RedFormat : THREE.LuminanceFormat;
     const toonGradient = new THREE.DataTexture(colors, 3, 1, format);
     toonGradient.minFilter = THREE.NearestFilter;
     toonGradient.magFilter = THREE.NearestFilter;
     toonGradient.needsUpdate = true;
 
-    //  Toon Studio: Ambient, Hemisphere  Directional Light
+    // : Ambient, Hemisphere, Key Light  Front Fill Light
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     scene.add(ambientLight);
 
@@ -428,13 +428,13 @@
     hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(8, 14, 8);
     dirLight.castShadow = true;
     scene.add(dirLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.7);
-    fillLight.position.set(0, 3, 10);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    fillLight.position.set(-5, 4, 8);
     scene.add(fillLight);
 
     const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
@@ -485,7 +485,7 @@
       if (e.key === 'r' || e.key === 'R') setGizmoMode('scale', btnScale);
     });
 
-    // 4. Raycaster  Canvas 
+    // 4. Raycaster  Canvas
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -573,13 +573,13 @@
       const fov = camera.fov * (Math.PI / 180);
       let dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 2.2;
 
-      camera.position.set(center.x + dist * 0.7, center.y + dist * 0.7, center.z + dist);
+      camera.position.set(center.x + dist * 0.75, center.y + dist * 0.65, center.z + dist * 0.95);
       camera.lookAt(center);
       controls.target.copy(center);
       controls.update();
     }
 
-    // 6.  3D  Cel-Shading  Inverted Hull Outline
+    // 6.  3D  Chunky Vinyl Figure  Bevel  Inverted Hull
     function renderModel(spec) {
       transformControls.detach();
       selectedMesh = null;
@@ -628,24 +628,28 @@
           shape.moveTo(pts[0][0], pts[0][1]);
           for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1]);
           shape.closePath();
-          geometry = new THREE.ExtrudeGeometry(shape, {
-            depth: p.depth !== undefined ? p.depth : 0.2,
-            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : false,
-            bevelSegments: 1,
-            steps: 1
-          });
+
+          //  0.6  (Rounded Bevel) 
+          const extrudeSettings = {
+            depth: p.depth !== undefined ? p.depth : 0.6,
+            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
+            bevelSegments: p.bevelSegments !== undefined ? p.bevelSegments : 3,
+            steps: 1,
+            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.05,
+            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.06
+          };
+          geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         } else if (item.type === 'tube') {
           const raw = (p.path && Array.isArray(p.path) && p.path.length > 1)
             ? p.path.map(pt => new THREE.Vector3(...pt))
             : [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0)];
           const curve = new THREE.CatmullRomCurve3(raw);
-          geometry = new THREE.TubeGeometry(curve, p.tubularSegments || 20, p.radius || 0.03, p.radialSegments || 8, false);
+          geometry = new THREE.TubeGeometry(curve, p.tubularSegments || 20, p.radius || 0.04, p.radialSegments || 8, false);
         } else if (item.type === 'plane') {
           geometry = new THREE.PlaneGeometry(p.width || 1, p.height || 1);
         }
 
         if (geometry) {
-          //  Cel-Shading 
           const material = new THREE.MeshToonMaterial({
             color: item.color || '#e0e0e0',
             gradientMap: toonGradient,
@@ -670,7 +674,7 @@
           };
           objectMap.set(id, mesh);
 
-          //  Inverted Hull
+          //  Inverted Hull 
           if (item.type !== 'plane') {
             const outlineMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide });
             const outlineMesh = new THREE.Mesh(geometry, outlineMat);
@@ -679,14 +683,12 @@
             mesh.add(outlineMesh);
           }
 
-          //  Parent-Child
           if (item.parent && objectMap.has(item.parent)) {
             objectMap.get(item.parent).add(mesh);
           } else {
             modelGroup.add(mesh);
           }
 
-          //  Outliner Item  UI
           const outlinerRow = document.createElement('div');
           outlinerRow.className = 'outliner-item';
           outlinerRow.dataset.id = id;
@@ -722,7 +724,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 7. Client-Side Color & Palette Analyzer ()
+    // 7. Client-Side Color & Palette Analyzer
     const imageInput = document.getElementById('image-input');
     const uploadedPreviewContainer = document.getElementById('uploaded-preview-container');
     const uploadedImagePreview = document.getElementById('uploaded-image-preview');
@@ -749,7 +751,6 @@
           currentImageBase64 = match[2];
         }
 
-        //  4 
         const img = new Image();
         img.onload = () => {
           const cvs = document.createElement('canvas');
@@ -762,8 +763,7 @@
 
           for (let i = 0; i < data.length; i += 16) {
             const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
-            if (a < 80) continue; // 
-            // Quantize
+            if (a < 80) continue;
             const qr = Math.round(r / 24) * 24;
             const qg = Math.round(g / 24) * 24;
             const qb = Math.round(b / 24) * 24;
@@ -800,7 +800,7 @@
       uploadedImagePreview.src = '';
     });
 
-    // 8.  Gemini 3.5 Flash-Lite
+    // 8.  Gemini 3.5 Flash-Lite API
     const apiKeyInput = document.getElementById('api-key-input');
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
@@ -820,7 +820,8 @@
     }
 
     const SYSTEM_PROMPT = `
-You are a master 3D procedural modeling engine. Analyze the reference image and prompt, then output ONLY a valid JSON object matching this schema:
+You are a master 3D stylized procedural toy modeler. Convert the user's reference image and prompt into a CHUNKY 3D VINYL FIGURE (collectible toy style with depth and rounded edges).
+NEVER create paper-thin flat cutouts! Output ONLY a valid JSON object matching this schema:
 {
   "objects": [
     {
@@ -835,7 +836,7 @@ You are a master 3D procedural modeling engine. Analyze the reference image and 
         // torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
         // capsule: "radius": float, "length": float
         // lathe: "points": [[x, y], ...], "segments": int
-        // extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool
+        // extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool, "bevelThickness": float, "bevelSize": float
         // tube: "path": [[x, y, z], ...], "radius": float, "tubularSegments": int
         // plane: "width": float, "height": float
       },
@@ -847,17 +848,22 @@ You are a master 3D procedural modeling engine. Analyze the reference image and 
   ]
 }
 
-STRICT VISUAL STYLE DECISION:
-1. FLAT 2D CARTOON / VECTOR CUTOUTS (e.g. BFDI characters like Pin, Leafy):
-   - The body is a 2.5D FLAT CUTOUT. NEVER use "cylinder" or "cone" for the main body!
-   - Use "extrude" with custom 2D polygon shape coordinates and thin depth (0.15 - 0.25).
-     * For Pin: silver triangular point on top (extrude, depth: 0.18), red hourglass head body (extrude, depth: 0.2).
-   - Stick Limbs: Thin black cylinders or tubes (radius: 0.025 to 0.035, color: "#000000").
-   - Facial Features: Simple black strokes/dots on the front face (Z offset ~ +0.12, color: "#000000").
-2. 3D ROUNDED CHARACTERS (e.g. Mario, Yoshi, Animals):
-   - Build anatomy: torso, head, limbs, snout, shoes with full 3D volumes.
-3. PARENT-CHILD STRUCTURE:
-   - Declare main body first (e.g. "body"), then attach children ("head", "eye_l", "arm_l") using the "parent" attribute.
+STRICT CHUNKY 3D TOY MODELING RULES:
+1. SOLID CHUNKY DEPTH (NO PAPER-THIN PLATES):
+   - When modeling 2D cartoon characters (e.g. Pin, Leafy from BFDI), turn them into thick 3D vinyl collectible figurines.
+   - Use "extrude" for the main body silhouette with substantial depth: depth: 0.5 to 0.75, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05. This gives the body a tactile, rounded 3D toy feel.
+   - For Pin (pushpin):
+     * Body: Red hourglass/flared head shape via extrude with depth: 0.6 (position: [0, 0.4, 0]).
+     * Top Spike: Silver 3D metal tip with full 3D thickness (cone with radius: 0.22, height: 0.8, or extrude pyramid with depth: 0.6) placed at the top center.
+2. STICK LIMBS WITH CHUNKY TOY FEEL:
+   - Arms and legs: Use cylinders or tubes with radius 0.035 to 0.05 (color: "#000000").
+   - Legs emerge from the bottom underside (-Y) and have tiny rounded foot pads.
+   - Arms emerge from the sides with natural bends.
+3. 2D FACIAL FEATURES ON 3D CHUNKY SURFACE:
+   - Eyes and mouth must be placed slightly forward on the front face (Z offset ~ depth + bevelThickness + 0.02) so they don't clip into the body.
+   - Use small black spheres/capsules (color: "#000000") for eyes and mouth.
+4. FOR 3D VOLUMETRIC CHARACTERS (Mario, Yoshi):
+   - Build complete head, snout, body, shoes, and props with 35 to 65 primitives as previously described.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -890,7 +896,7 @@ STRICT VISUAL STYLE DECISION:
         });
       }
 
-      let userText = prompt || '  2D  extrude   ';
+      let userText = prompt || ' 3D  (Chunky Vinyl Toy)   ';
       if (detectedColorsSummary) {
         userText += ` (Detected Dominant Colors: ${detectedColorsSummary})`;
       }

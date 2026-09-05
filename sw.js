@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agent-3d-builder-v12';
+const CACHE_NAME = 'agent-3d-builder-v13';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -30,7 +30,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // การเรียกใช้ Gemini API ให้ดึงข้อมูลสดผ่านเครือข่ายเสมอ ไม่ดึงจากแคช[span_3](start_span)[span_3](end_span)
+  // การเรียกใช้ Gemini API ให้ดึงข้อมูลสดผ่านเครือข่ายเสมอ ไม่ดึงจากแคช
   if (event.request.url.includes('googleapis.com') || event.request.method !== 'GET') {
     return;
   }
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).catch(() => {
-        // ออฟไลน์[span_4](start_span)[span_4](end_span)
+        // ออฟไลน์
       });
     })
   );
