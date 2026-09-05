@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent 3D Builder</title>
+  <title>Agent 3D Builder Studio</title>
 
   <!-- PWA & Mobile Web App Settings -->
   <link rel="manifest" href="manifest.json">
@@ -30,49 +30,52 @@
       overflow: hidden;
     }
     #sidebar {
-      width: 380px;
-      min-width: 320px;
-      padding: 20px;
+      width: 400px;
+      min-width: 330px;
+      padding: 18px;
       background: #242424;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
       border-right: 1px solid #333333;
       z-index: 10;
       overflow-y: auto;
     }
     h1 {
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       color: #00d2ff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     label {
       font-size: 13px;
       color: #cccccc;
-      margin-bottom: -6px;
+      margin-bottom: -4px;
     }
     input[type="password"],
     input[type="text"],
     input[type="file"],
     textarea {
       width: 100%;
-      padding: 10px;
+      padding: 9px 10px;
       border-radius: 6px;
       border: 1px solid #444;
       background: #181818;
       color: #fff;
-      font-size: 14px;
+      font-size: 13.5px;
       line-height: 1.5;
     }
     input[type="file"] {
-      padding: 8px;
+      padding: 7px;
       cursor: pointer;
     }
     textarea {
-      height: 85px;
+      height: 75px;
       resize: vertical;
     }
     button {
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-radius: 6px;
       border: none;
       background: #0084ff;
@@ -80,7 +83,7 @@
       font-weight: bold;
       cursor: pointer;
       transition: background 0.2s;
-      font-size: 14px;
+      font-size: 13.5px;
     }
     button:hover:not(:disabled) {
       background: #0070d6;
@@ -96,9 +99,9 @@
       background: #218838;
     }
     #app-status {
-      padding: 10px 12px;
+      padding: 9px 12px;
       border-radius: 4px;
-      font-size: 13px;
+      font-size: 12.5px;
       background: #333333;
       color: #bbbbbb;
       word-break: break-word;
@@ -119,12 +122,12 @@
     #download-image-btn {
       display: inline-block;
       text-align: center;
-      padding: 12px;
+      padding: 10px;
       color: white;
       text-decoration: none;
       border-radius: 6px;
       font-weight: bold;
-      font-size: 14px;
+      font-size: 13px;
     }
     #download-link {
       background: #10b981;
@@ -149,9 +152,9 @@
     #uploaded-preview-container {
       display: none;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       background: #1e1e1e;
-      padding: 12px;
+      padding: 10px;
       border-radius: 6px;
       border: 1px solid #333;
     }
@@ -159,22 +162,94 @@
     #uploaded-image-preview {
       width: 100%;
       height: auto;
-      max-height: 160px;
+      max-height: 140px;
       object-fit: contain;
       background: #141414;
       border-radius: 4px;
       border: 1px solid #444;
     }
+    #detected-palette {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .color-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid #666;
+    }
     #remove-image-btn {
       background: #dc2626;
-      padding: 6px 10px;
+      padding: 5px 8px;
       font-size: 12px;
     }
     #remove-image-btn:hover {
       background: #b91c1c;
     }
 
-    /* ปุ่มสลับโหมดสัมผัส 3D */
+    /* Outliner and Inspector */
+    #outliner-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #1b1b1b;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .outliner-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 8px;
+      background: #282828;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .outliner-item.selected {
+      background: #005bb5;
+      border: 1px solid #00d2ff;
+    }
+    .outliner-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .outliner-controls input[type="color"] {
+      width: 22px;
+      height: 22px;
+      border: none;
+      padding: 0;
+      background: none;
+      cursor: pointer;
+    }
+
+    /* Viewport Floating Controls */
+    #viewport-controls {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+      display: flex;
+      gap: 8px;
+    }
+    .tool-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid #555;
+      color: #fff;
+      backdrop-filter: blur(4px);
+    }
+    .tool-btn.active {
+      background: #0084ff;
+      border-color: #00d2ff;
+    }
     #touch-toggle-btn {
       position: absolute;
       top: 12px;
@@ -204,8 +279,8 @@
         -webkit-overflow-scrolling: touch;
       }
       #canvas-container {
-        height: 38vh;
-        min-height: 240px;
+        height: 42vh;
+        min-height: 260px;
         width: 100%;
         flex: none;
       }
@@ -219,12 +294,6 @@
         border-top: 1px solid #333333;
         padding: 16px;
         padding-bottom: 40px;
-      }
-      input[type="password"],
-      input[type="text"],
-      input[type="file"],
-      textarea {
-        font-size: 16px;
       }
     }
   </style>
@@ -241,20 +310,26 @@
 <body>
 
   <div id="canvas-container">
-    <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
+    <div id="viewport-controls">
+      <button class="tool-btn active" id="btn-translate" type="button"> Move (W)</button>
+      <button class="tool-btn" id="btn-rotate" type="button"> Rotate (E)</button>
+      <button class="tool-btn" id="btn-scale" type="button"> Scale (R)</button>
+      <button class="tool-btn" id="btn-motion" type="button"> Motion: ON</button>
+    </div>
+    <button id="touch-toggle-btn" type="button">  3D ()</button>
   </div>
 
   <div id="sidebar">
-    <h1>Agent 3D Builder</h1>
+    <h1>Agent 3D Studio</h1>
     
     <label for="api-key-input">Gemini API Key:</label>
     <input 
       type="password" 
       id="api-key-input" 
       data-testid="api-key-input" 
-      placeholder="ใส่ Gemini API Key ที่นี่" />
+      placeholder=" Gemini API Key " />
 
-    <label for="image-input">อัปโหลดรูปภาพ 2D (ตัวเลือกเสริม):</label>
+    <label for="image-input"> 2D:</label>
     <input 
       type="file" 
       id="image-input" 
@@ -263,26 +338,32 @@
 
     <div id="uploaded-preview-container">
       <img id="uploaded-image-preview" alt="Uploaded Preview" />
-      <button id="remove-image-btn" type="button">❌ ลบรูปภาพที่เลือก</button>
+      <div id="detected-palette"></div>
+      <button id="remove-image-btn" type="button"> </button>
     </div>
 
-    <label for="prompt-input">คำอธิบายโมเดล 3D (หรือรายละเอียดเพิ่มเติม):</label>
+    <label for="prompt-input">:</label>
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: หมุดปักกระดาษ Pin BFDI หรือ มาริโอ้วิ่ง หรือ รายละเอียดเพิ่มเติม"></textarea>
+      placeholder=":  Pin BFDI   "></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
     
     <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle</div>
+
+    <label> (Scene Outliner):</label>
+    <div id="outliner-panel">
+      <div style="font-size: 12px; color: #888;"></div>
+    </div>
     
     <a id="download-link" data-testid="download-link" style="display: none;" download="model.glb">
       Download Model (.glb)
     </a>
 
     <div id="preview-container">
-      <label>รูปภาพพรีวิว (Snapshot Image):</label>
+      <label> (Snapshot Image):</label>
       <img id="preview-image" data-testid="preview-image" alt="3D Model Preview" />
       <a id="download-image-btn" data-testid="download-image-btn" download="model-preview.png">
         Download Image (.png)
@@ -294,21 +375,18 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-    // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)[span_0](start_span)[span_0](end_span)
+    // 1.  Service Worker  PWA[span_0](start_span)[span_0](end_span)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then((registration) => {
-            console.log('ServiceWorker registered with scope:', registration.scope);
-          })
-          .catch((error) => {
-            console.error('ServiceWorker registration failed:', error);
-          });
+          .then((reg) => console.log('SW registered:', reg.scope))
+          .catch((err) => console.error('SW failed:', err));
       });
     }
 
-    // 2. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer สำหรับบันทึกภาพ[span_1](start_span)[span_1](end_span)
+    // 2.  Three.js Scene, Camera, WebGLRenderer[span_1](start_span)[span_1](end_span)
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -319,41 +397,44 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    const touchToggleBtn = document.getElementById('touch-toggle-btn');
-    let isTouchLocked = false;
+    // TransformControls 
+    const transformControls = new TransformControls(camera, renderer.domElement);
+    transformControls.size = 0.75;
+    scene.add(transformControls);
 
-    touchToggleBtn.addEventListener('click', () => {
-      isTouchLocked = !isTouchLocked;
-      if (isTouchLocked) {
-        controls.enabled = false;
-        touchToggleBtn.classList.add('locked');
-        touchToggleBtn.textContent = '🔒 ล็อกมุมมอง (เลื่อนหน้าจอง่าย)';
-      } else {
-        controls.enabled = true;
-        touchToggleBtn.classList.remove('locked');
-        touchToggleBtn.textContent = '🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)';
-      }
+    transformControls.addEventListener('dragging-changed', (e) => {
+      controls.enabled = !e.value;
     });
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    // Toon Gradient Texture 3  Cel-shading
+    const colors = new Uint8Array([70, 160, 255]);
+    const format = renderer.capabilities.isWebGL2 ? THREE.RedFormat : THREE.LuminanceFormat;
+    const toonGradient = new THREE.DataTexture(colors, 3, 1, format);
+    toonGradient.minFilter = THREE.NearestFilter;
+    toonGradient.magFilter = THREE.NearestFilter;
+    toonGradient.needsUpdate = true;
+
+    //  Toon Studio: Ambient, Hemisphere  Directional Light
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x333333, 0.5);
     hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    dirLight.position.set(10, 15, 10);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    dirLight.position.set(8, 14, 8);
     dirLight.castShadow = true;
     scene.add(dirLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    fillLight.position.set(0, 2, 10);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    fillLight.position.set(0, 3, 10);
     scene.add(fillLight);
 
     const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
@@ -362,69 +443,155 @@
     const modelGroup = new THREE.Group();
     scene.add(modelGroup);
 
-    function updateViewport() {
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-      if (width > 0 && height > 0) {
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-        renderer.setSize(width, height);
-      }
+    // 3.  Viewport
+    let isTouchLocked = false;
+    let isMotionActive = true;
+    let selectedMesh = null;
+    const clock = new THREE.Clock();
+
+    const touchToggleBtn = document.getElementById('touch-toggle-btn');
+    touchToggleBtn.addEventListener('click', () => {
+      isTouchLocked = !isTouchLocked;
+      controls.enabled = !isTouchLocked;
+      touchToggleBtn.classList.toggle('locked', isTouchLocked);
+      touchToggleBtn.textContent = isTouchLocked ? '  ()' : '  3D ()';
+    });
+
+    const btnTranslate = document.getElementById('btn-translate');
+    const btnRotate = document.getElementById('btn-rotate');
+    const btnScale = document.getElementById('btn-scale');
+    const btnMotion = document.getElementById('btn-motion');
+
+    function setGizmoMode(mode, activeBtn) {
+      transformControls.setMode(mode);
+      [btnTranslate, btnRotate, btnScale].forEach(b => b.classList.remove('active'));
+      activeBtn.classList.add('active');
     }
 
+    btnTranslate.addEventListener('click', () => setGizmoMode('translate', btnTranslate));
+    btnRotate.addEventListener('click', () => setGizmoMode('rotate', btnRotate));
+    btnScale.addEventListener('click', () => setGizmoMode('scale', btnScale));
+
+    btnMotion.addEventListener('click', () => {
+      isMotionActive = !isMotionActive;
+      btnMotion.textContent = isMotionActive ? ' Motion: ON' : ' Motion: OFF';
+      btnMotion.classList.toggle('active', isMotionActive);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'w' || e.key === 'W') setGizmoMode('translate', btnTranslate);
+      if (e.key === 'e' || e.key === 'E') setGizmoMode('rotate', btnRotate);
+      if (e.key === 'r' || e.key === 'R') setGizmoMode('scale', btnScale);
+    });
+
+    // 4. Raycaster  Canvas 
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(modelGroup.children, true);
+      const valid = intersects.find(hit => hit.object.userData && hit.object.userData.isSelectable);
+
+      if (valid) {
+        selectObject(valid.object);
+      }
+    });
+
+    function selectObject(mesh) {
+      selectedMesh = mesh;
+      transformControls.attach(mesh);
+      document.querySelectorAll('.outliner-item').forEach(item => {
+        item.classList.toggle('selected', item.dataset.id === mesh.userData.id);
+      });
+    }
+
+    function updateViewport() {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    }
     window.addEventListener('resize', updateViewport);
 
+    // 5. Main Render Loop  Procedural Idle & Breathing Motion
     function animate() {
       requestAnimationFrame(animate);
-      if (controls.enabled) {
-        controls.update();
+      if (controls.enabled) controls.update();
+
+      const time = clock.getElapsedTime();
+      if (isMotionActive) {
+        modelGroup.children.forEach(root => {
+          if (!root.userData.isOutline) {
+            root.position.y = (root.userData.baseY || 0) + Math.sin(time * 3) * 0.035;
+          }
+          root.traverse(child => {
+            if (child.userData && child.userData.id) {
+              const id = child.userData.id.toLowerCase();
+              if (id.includes('head')) {
+                child.rotation.y = (child.userData.baseRotY || 0) + Math.sin(time * 2) * 0.05;
+              } else if (id.includes('arm')) {
+                child.rotation.z = (child.userData.baseRotZ || 0) + Math.sin(time * 2.8) * 0.06;
+              }
+            }
+          });
+        });
       }
+
       renderer.render(scene, camera);
     }
     animate();
 
-    function disposeObject(obj) {
+    function disposeHierarchy(obj) {
       if (obj.children) {
         while (obj.children.length > 0) {
-          disposeObject(obj.children[0]);
+          disposeHierarchy(obj.children[0]);
           obj.remove(obj.children[0]);
         }
       }
       if (obj.geometry) obj.geometry.dispose();
       if (obj.material) {
-        if (Array.isArray(obj.material)) {
-          obj.material.forEach(m => m.dispose());
-        } else {
-          obj.material.dispose();
-        }
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
       }
     }
 
-    // 3. ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ[span_2](start_span)[span_2](end_span)
     function fitCameraToObject(object) {
       const box = new THREE.Box3().setFromObject(object);
       if (box.isEmpty()) return;
-
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
       const fov = camera.fov * (Math.PI / 180);
-      let cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-      cameraDistance *= 2.2;
+      let dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 2.2;
 
-      camera.position.set(center.x + cameraDistance * 0.7, center.y + cameraDistance * 0.7, center.z + cameraDistance);
+      camera.position.set(center.x + dist * 0.7, center.y + dist * 0.7, center.z + dist);
       camera.lookAt(center);
       controls.target.copy(center);
       controls.update();
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec ที่รองรับ Hierarchy, Tube Curves และ Plane
+    // 6.  3D  Cel-Shading  Inverted Hull Outline
     function renderModel(spec) {
+      transformControls.detach();
+      selectedMesh = null;
+
       while (modelGroup.children.length > 0) {
         const obj = modelGroup.children[0];
-        disposeObject(obj);
+        disposeHierarchy(obj);
         modelGroup.remove(obj);
       }
+
+      const outlinerPanel = document.getElementById('outliner-panel');
+      outlinerPanel.innerHTML = '';
 
       if (!spec.objects || !Array.isArray(spec.objects)) return;
 
@@ -444,97 +611,101 @@
             p.radialSegments || 32
           );
         } else if (item.type === 'sphere') {
-          geometry = new THREE.SphereGeometry(
-            p.radius || 0.5,
-            p.widthSegments || 32,
-            p.heightSegments || 16
-          );
+          geometry = new THREE.SphereGeometry(p.radius || 0.5, p.widthSegments || 32, p.heightSegments || 16);
         } else if (item.type === 'cone') {
-          geometry = new THREE.ConeGeometry(
-            p.radius || 0.5,
-            p.height || 1,
-            p.radialSegments || 32
-          );
+          geometry = new THREE.ConeGeometry(p.radius || 0.5, p.height || 1, p.radialSegments || 32);
         } else if (item.type === 'torus') {
-          geometry = new THREE.TorusGeometry(
-            p.radius || 0.5,
-            p.tube || 0.2,
-            p.radialSegments || 16,
-            p.tubularSegments || 32
-          );
+          geometry = new THREE.TorusGeometry(p.radius || 0.5, p.tube || 0.2, p.radialSegments || 16, p.tubularSegments || 32);
         } else if (item.type === 'capsule') {
-          geometry = new THREE.CapsuleGeometry(
-            p.radius || 0.5,
-            p.length || 1,
-            p.capSubdivisions || 8,
-            p.radialSegments || 16
-          );
+          geometry = new THREE.CapsuleGeometry(p.radius || 0.5, p.length || 1, p.capSubdivisions || 8, p.radialSegments || 16);
         } else if (item.type === 'lathe') {
-          const rawPoints = (p.points && Array.isArray(p.points) && p.points.length > 1) ? p.points : [[0, 0], [0.5, 0.5], [0.3, 1], [0, 1]];
-          const points = rawPoints.map(pt => new THREE.Vector2(Math.max(0, pt[0]), pt[1]));
-          geometry = new THREE.LatheGeometry(points, p.segments || 32);
+          const raw = (p.points && Array.isArray(p.points) && p.points.length > 1) ? p.points : [[0, 0], [0.5, 0.5], [0.3, 1], [0, 1]];
+          const pts = raw.map(pt => new THREE.Vector2(Math.max(0, pt[0]), pt[1]));
+          geometry = new THREE.LatheGeometry(pts, p.segments || 32);
         } else if (item.type === 'extrude') {
           const shape = new THREE.Shape();
           const pts = (p.shape && Array.isArray(p.shape) && p.shape.length >= 3) ? p.shape : [[0, 0], [1, 0], [0.5, 1]];
           shape.moveTo(pts[0][0], pts[0][1]);
-          for (let i = 1; i < pts.length; i++) {
-            shape.lineTo(pts[i][0], pts[i][1]);
-          }
+          for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1]);
           shape.closePath();
-
-          const extrudeSettings = {
+          geometry = new THREE.ExtrudeGeometry(shape, {
             depth: p.depth !== undefined ? p.depth : 0.2,
             bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : false,
-            bevelSegments: p.bevelSegments || 1,
-            steps: 1,
-            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.02,
-            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.02
-          };
-          geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            bevelSegments: 1,
+            steps: 1
+          });
         } else if (item.type === 'tube') {
-          const rawPath = (p.path && Array.isArray(p.path) && p.path.length > 1)
+          const raw = (p.path && Array.isArray(p.path) && p.path.length > 1)
             ? p.path.map(pt => new THREE.Vector3(...pt))
             : [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0)];
-          const curve = new THREE.CatmullRomCurve3(rawPath);
-          geometry = new THREE.TubeGeometry(
-            curve,
-            p.tubularSegments || 24,
-            p.radius || 0.035,
-            p.radialSegments || 8,
-            p.closed || false
-          );
+          const curve = new THREE.CatmullRomCurve3(raw);
+          geometry = new THREE.TubeGeometry(curve, p.tubularSegments || 20, p.radius || 0.03, p.radialSegments || 8, false);
         } else if (item.type === 'plane') {
           geometry = new THREE.PlaneGeometry(p.width || 1, p.height || 1);
-        } else if (item.type === 'dodecahedron') {
-          geometry = new THREE.DodecahedronGeometry(p.radius || 0.5, p.detail || 0);
-        } else if (item.type === 'icosahedron') {
-          geometry = new THREE.IcosahedronGeometry(p.radius || 0.5, p.detail || 0);
         }
 
         if (geometry) {
-          const material = new THREE.MeshStandardMaterial({
-            color: item.color || '#cccccc',
-            metalness: item.metalness !== undefined ? item.metalness : 0.05,
-            roughness: item.roughness !== undefined ? item.roughness : 0.65,
+          //  Cel-Shading 
+          const material = new THREE.MeshToonMaterial({
+            color: item.color || '#e0e0e0',
+            gradientMap: toonGradient,
             side: item.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide
           });
 
           const mesh = new THREE.Mesh(geometry, material);
-          if (item.position && Array.isArray(item.position)) mesh.position.set(...item.position);
-          if (item.rotation && Array.isArray(item.rotation)) mesh.rotation.set(...item.rotation);
-          if (item.scale && Array.isArray(item.scale)) mesh.scale.set(...item.scale);
+          if (item.position) mesh.position.set(...item.position);
+          if (item.rotation) mesh.rotation.set(...item.rotation);
+          if (item.scale) mesh.scale.set(...item.scale);
           
           mesh.castShadow = true;
           mesh.receiveShadow = true;
 
-          const itemId = item.id || `obj_${index}`;
-          objectMap.set(itemId, mesh);
+          const id = item.id || `piece_${index}`;
+          mesh.userData = {
+            id: id,
+            isSelectable: true,
+            baseY: mesh.position.y,
+            baseRotY: mesh.rotation.y,
+            baseRotZ: mesh.rotation.z
+          };
+          objectMap.set(id, mesh);
 
+          //  Inverted Hull
+          if (item.type !== 'plane') {
+            const outlineMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide });
+            const outlineMesh = new THREE.Mesh(geometry, outlineMat);
+            outlineMesh.scale.multiplyScalar(1.035);
+            outlineMesh.userData = { isOutline: true };
+            mesh.add(outlineMesh);
+          }
+
+          //  Parent-Child
           if (item.parent && objectMap.has(item.parent)) {
             objectMap.get(item.parent).add(mesh);
           } else {
             modelGroup.add(mesh);
           }
+
+          //  Outliner Item  UI
+          const outlinerRow = document.createElement('div');
+          outlinerRow.className = 'outliner-item';
+          outlinerRow.dataset.id = id;
+          outlinerRow.innerHTML = `
+            <span>${id} (${item.type})</span>
+            <div class="outliner-controls">
+              <input type="color" value="${item.color || '#cccccc'}">
+            </div>
+          `;
+
+          outlinerRow.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'INPUT') selectObject(mesh);
+          });
+
+          outlinerRow.querySelector('input[type="color"]').addEventListener('input', (e) => {
+            material.color.set(e.target.value);
+          });
+
+          outlinerPanel.appendChild(outlinerRow);
         }
       });
 
@@ -551,30 +722,16 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 5. จัดการ Element และการเชื่อมต่อ Gemini API[span_3](start_span)[span_3](end_span)
-    const apiKeyInput = document.getElementById('api-key-input');
+    // 7. Client-Side Color & Palette Analyzer ()
     const imageInput = document.getElementById('image-input');
     const uploadedPreviewContainer = document.getElementById('uploaded-preview-container');
     const uploadedImagePreview = document.getElementById('uploaded-image-preview');
+    const detectedPaletteContainer = document.getElementById('detected-palette');
     const removeImageBtn = document.getElementById('remove-image-btn');
-    const promptInput = document.getElementById('prompt-input');
-    const generateBtn = document.getElementById('generate-btn');
-    const exportBtn = document.getElementById('export-glb-btn');
-    const appStatus = document.getElementById('app-status');
-    const downloadLink = document.getElementById('download-link');
-    const previewContainer = document.getElementById('preview-container');
 
     let currentImageBase64 = null;
     let currentImageMimeType = null;
-
-    const savedApiKey = localStorage.getItem('gemini_api_key');
-    if (savedApiKey) {
-      apiKeyInput.value = savedApiKey;
-    }
-
-    apiKeyInput.addEventListener('change', () => {
-      localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
-    });
+    let detectedColorsSummary = '';
 
     imageInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -591,6 +748,45 @@
           currentImageMimeType = match[1];
           currentImageBase64 = match[2];
         }
+
+        //  4 
+        const img = new Image();
+        img.onload = () => {
+          const cvs = document.createElement('canvas');
+          const ctx = cvs.getContext('2d');
+          cvs.width = 64;
+          cvs.height = 64;
+          ctx.drawImage(img, 0, 0, 64, 64);
+          const data = ctx.getImageData(0, 0, 64, 64).data;
+          const colorCounts = {};
+
+          for (let i = 0; i < data.length; i += 16) {
+            const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+            if (a < 80) continue; // 
+            // Quantize
+            const qr = Math.round(r / 24) * 24;
+            const qg = Math.round(g / 24) * 24;
+            const qb = Math.round(b / 24) * 24;
+            const hex = '#' + ((1 << 24) + (qr << 16) + (qg << 8) + qb).toString(16).slice(1);
+            colorCounts[hex] = (colorCounts[hex] || 0) + 1;
+          }
+
+          const topColors = Object.entries(colorCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(c => c[0]);
+
+          detectedPaletteContainer.innerHTML = '<span style="font-size:12px;color:#aaa;">:</span>';
+          topColors.forEach(hex => {
+            const dot = document.createElement('div');
+            dot.className = 'color-dot';
+            dot.style.backgroundColor = hex;
+            dot.title = hex;
+            detectedPaletteContainer.appendChild(dot);
+          });
+          detectedColorsSummary = topColors.join(', ');
+        };
+        img.src = result;
       };
       reader.readAsDataURL(file);
     });
@@ -599,18 +795,32 @@
       imageInput.value = '';
       currentImageBase64 = null;
       currentImageMimeType = null;
+      detectedColorsSummary = '';
       uploadedPreviewContainer.style.display = 'none';
       uploadedImagePreview.src = '';
     });
 
-    function setStatus(state, message) {
+    // 8.  Gemini 3.5 Flash-Lite
+    const apiKeyInput = document.getElementById('api-key-input');
+    const promptInput = document.getElementById('prompt-input');
+    const generateBtn = document.getElementById('generate-btn');
+    const exportBtn = document.getElementById('export-glb-btn');
+    const appStatus = document.getElementById('app-status');
+    const downloadLink = document.getElementById('download-link');
+
+    const savedApiKey = localStorage.getItem('gemini_api_key');
+    if (savedApiKey) apiKeyInput.value = savedApiKey;
+    apiKeyInput.addEventListener('change', () => {
+      localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+    });
+
+    function setStatus(state, msg) {
       appStatus.setAttribute('data-status', state);
-      appStatus.textContent = `Status: ${message}`;
+      appStatus.textContent = `Status: ${msg}`;
     }
 
-    // Prompt ฉบับปรับปรุงใหม่: เน้นความแม่นยำ แยกประเภท 2D Cutout vs 3D Solid ชัดเจน ปราศจาก Prompt Bloat
     const SYSTEM_PROMPT = `
-You are a precise 3D procedural modeling engine. Analyze the reference image or prompt and output ONLY a valid JSON object matching this schema:
+You are a master 3D procedural modeling engine. Analyze the reference image and prompt, then output ONLY a valid JSON object matching this schema:
 {
   "objects": [
     {
@@ -632,29 +842,22 @@ You are a precise 3D procedural modeling engine. Analyze the reference image or 
       "position": [x, y, z],
       "rotation": [rotX, rotY, rotZ],
       "scale": [scaleX, scaleY, scaleZ],
-      "color": "#hexcode",
-      "metalness": float_0_to_1,
-      "roughness": float_0_to_1
+      "color": "#hexcode"
     }
   ]
 }
 
-STRICT VISUAL STYLE DECISION RULES:
-
-CASE 1: FLAT 2D CARTOON / VECTOR CUTOUT (e.g. BFDI characters like Pin the pushpin, Leafy the leaf, Coiny):
-- The body is a flat 2D silhouette cutout. NEVER use "cylinder" or "cone" for the main body!
-- BODY: Use "extrude" to trace the exact 2D perimeter shape (with thin depth: 0.15 - 0.25).
-  * Example: Pin has a flat triangular silver metal point at top, connected to a red flared hourglass body (wide top, narrow waist, wide bottom). Both MUST be "extrude" shapes with depth: 0.2!
-- LIMBS: Arms and legs are simple stick figures. Use thin vertical/angled cylinders or tubes (radius: 0.025 to 0.035, color: "#000000").
-- FACE: Eyes and mouth are flat 2D strokes on the front face. Use small black spheres or flattened boxes (color: "#000000") placed on the front (+Z) surface of the body.
-
-CASE 2: 3D VOLUMETRIC CHARACTERS & FIGURES (e.g. Mario, Yoshi, animals):
-- Build full 3D body parts (head, snout, torso, limbs, shoes) with proper depth and overlapping joints.
-
-GENERAL RULES:
-- Ignore any web browser UI, status bars, or search boxes present in the screenshot.
-- Sample exact colors from the image (e.g. crimson red for Pin, silver grey for metal tip, pitch black for stick limbs).
-- Center the character around origin (Y = 0 at feet).
+STRICT VISUAL STYLE DECISION:
+1. FLAT 2D CARTOON / VECTOR CUTOUTS (e.g. BFDI characters like Pin, Leafy):
+   - The body is a 2.5D FLAT CUTOUT. NEVER use "cylinder" or "cone" for the main body!
+   - Use "extrude" with custom 2D polygon shape coordinates and thin depth (0.15 - 0.25).
+     * For Pin: silver triangular point on top (extrude, depth: 0.18), red hourglass head body (extrude, depth: 0.2).
+   - Stick Limbs: Thin black cylinders or tubes (radius: 0.025 to 0.035, color: "#000000").
+   - Facial Features: Simple black strokes/dots on the front face (Z offset ~ +0.12, color: "#000000").
+2. 3D ROUNDED CHARACTERS (e.g. Mario, Yoshi, Animals):
+   - Build anatomy: torso, head, limbs, snout, shoes with full 3D volumes.
+3. PARENT-CHILD STRUCTURE:
+   - Declare main body first (e.g. "body"), then attach children ("head", "eye_l", "arm_l") using the "parent" attribute.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -662,12 +865,11 @@ GENERAL RULES:
       const prompt = promptInput.value.trim();
 
       if (!apiKey) {
-        setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
+        setStatus('error', ' Gemini API Key ');
         return;
       }
-
       if (!prompt && !currentImageBase64) {
-        setStatus('error', 'กรุณาระบุคำอธิบายโมเดล 3D หรืออัปโหลดรูปภาพ 2D');
+        setStatus('error', ' 3D  2D');
         return;
       }
 
@@ -675,7 +877,6 @@ GENERAL RULES:
       generateBtn.disabled = true;
       exportBtn.disabled = true;
       downloadLink.style.display = 'none';
-      previewContainer.style.display = 'none';
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
 
@@ -689,7 +890,10 @@ GENERAL RULES:
         });
       }
 
-      const userText = prompt || 'วิเคราะห์ตัวละครในรูปภาพอย่างซื่อตรง หากเป็นตัวการ์ตูนแบน 2D ให้ใช้ extrude ทำโครงร่างแบนบาง แขนขาเป็นเส้นขีดสีดำ และตาปากเป็นจุดสีดำตามภาพ';
+      let userText = prompt || '  2D  extrude   ';
+      if (detectedColorsSummary) {
+        userText += ` (Detected Dominant Colors: ${detectedColorsSummary})`;
+      }
       parts.push({ text: userText });
 
       try {
@@ -697,14 +901,8 @@ GENERAL RULES:
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [
-              {
-                parts: parts
-              }
-            ],
-            systemInstruction: {
-              parts: [{ text: SYSTEM_PROMPT }]
-            },
+            contents: [{ parts: parts }],
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
             generationConfig: {
               responseMimeType: "application/json",
               temperature: 0.1
@@ -719,25 +917,22 @@ GENERAL RULES:
 
         const data = await response.json();
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (!rawText) {
-          throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
-        }
+        if (!rawText) throw new Error('');
 
         const specData = JSON.parse(rawText);
         renderModel(specData);
         
-        setStatus('ready', 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
+        setStatus('ready', ' 3D ');
         exportBtn.disabled = false;
       } catch (err) {
-        setStatus('error', 'เกิดข้อผิดพลาด: ' + err.message);
+        setStatus('error', ': ' + err.message);
       } finally {
         generateBtn.disabled = false;
       }
     });
 
     exportBtn.addEventListener('click', () => {
-      setStatus('generating', 'กำลังสร้างไฟล์ GLB...');
+      setStatus('generating', ' GLB...');
       const exporter = new GLTFExporter();
       exporter.parse(
         modelGroup,
@@ -746,11 +941,9 @@ GENERAL RULES:
           const url = URL.createObjectURL(blob);
           downloadLink.href = url;
           downloadLink.style.display = 'block';
-          setStatus('ready', 'Export สำเร็จ! กดดาวน์โหลดไฟล์ด้านล่าง');
+          setStatus('ready', 'Export ! ');
         },
-        (error) => {
-          setStatus('error', 'Export error: ' + error.message);
-        },
+        (error) => setStatus('error', 'Export error: ' + error.message),
         { binary: true }
       );
     });
