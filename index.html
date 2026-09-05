@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent 3D Builder (Single File)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #1a1a1a;
+      color: #ffffff;
+    }
+    #sidebar {
+      width: 360px;
+      padding: 20px;
+      background: #242424;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border-right: 1px solid #333333;
+      z-index: 10;
+      overflow-y: auto;
+    }
+    h1 {
+      font-size: 1.2rem;
+      color: #00d2ff;
+    }
+    label {
+      font-size: 13px;
+      color: #cccccc;
+      margin-bottom: -6px;
+    }
+    input[type="password"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #181818;
+      color: #fff;
+      font-size: 14px;
+    }
+    textarea {
+      height: 100px;
+      resize: none;
+    }
+    button {
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      background: #0084ff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #0070d6;
+    }
+    button:disabled {
+      background: #555555;
+      cursor: not-allowed;
+    }
+    #export-glb-btn {
+      background: #28a745;
+    }
+    #export-glb-btn:hover:not(:disabled) {
+      background: #218838;
+    }
+    #app-status {
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #333333;
+      color: #bbbbbb;
+      word-break: break-word;
+    }
+    #app-status[data-status="ready"] {
+      background: #14381e;
+      color: #4ade80;
+    }
+    #app-status[data-status="generating"] {
+      background: #3e3312;
+      color: #facc15;
+    }
+    #app-status[data-status="error"] {
+      background: #441717;
+      color: #f87171;
+    }
+    #download-link {
+      display: inline-block;
+      text-align: center;
+      padding: 10px;
+      background: #10b981;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    #download-link:hover {
+      background: #059669;
+    }
+    #canvas-container {
+      flex: 1;
+      height: 100%;
+      position: relative;
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <div id="sidebar">
+    <h1>Agent 3D Builder</h1>
+    
+    <label for="api-key-input">Gemini API Key:</label>
+    <input 
+      type="password" 
+      id="api-key-input" 
+      data-testid="api-key-input" 
+      placeholder="ใส่ Gemini API Key ที่นี่" />
+
+    <label for="prompt-input">คำอธิบายโมเดล 3D:</label>
+    <textarea 
+      id="prompt-input" 
+      data-testid="prompt-input" 
+      placeholder="ตัวอย่าง: สร้างโต๊ะไม้ 4 ขา หรือ ถ้วยกาแฟทรงกระบอก"></textarea>
+
+    <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
+    <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
+    
+    <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle</div>
+    
+    <a id="download-link" data-testid="download-link" style="display: none;" download="model.glb">
+      Download Model (.glb)
+    </a>
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+    // 1. การตั้งค่า Three.js Scene
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a1a);
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(5, 5, 7);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(10, 15, 10);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+    scene.add(gridHelper);
+
+    const modelGroup = new THREE.Group();
+    scene.add(modelGroup);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // 2. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec
+    function renderModel(spec) {
+      while (modelGroup.children.length > 0) {
+        const obj = modelGroup.children[0];
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) obj.material.dispose();
+        modelGroup.remove(obj);
+      }
+
+      if (!spec.objects || !Array.isArray(spec.objects)) return;
+
+      spec.objects.forEach(item => {
+        let geometry;
+        const p = item.parameters || {};
+
+        if (item.type === 'box') {
+          geometry = new THREE.BoxGeometry(p.width || 1, p.height || 1, p.depth || 1);
+        } else if (item.type === 'cylinder') {
+          geometry = new THREE.CylinderGeometry(
+            p.radiusTop !== undefined ? p.radiusTop : 0.5,
+            p.radiusBottom !== undefined ? p.radiusBottom : 0.5,
+            p.height || 1,
+            p.radialSegments || 32
+          );
+        } else if (item.type === 'sphere') {
+          geometry = new THREE.SphereGeometry(
+            p.radius || 0.5,
+            p.widthSegments || 32,
+            p.heightSegments || 16
+          );
+        } else if (item.type === 'cone') {
+          geometry = new THREE.ConeGeometry(
+            p.radius || 0.5,
+            p.height || 1,
+            p.radialSegments || 32
+          );
+        } else if (item.type === 'torus') {
+          geometry = new THREE.TorusGeometry(
+            p.radius || 0.5,
+            p.tube || 0.2,
+            p.radialSegments || 16,
+            p.tubularSegments || 32
+          );
+        }
+
+        if (geometry) {
+          const material = new THREE.MeshStandardMaterial({
+            color: item.color || '#cccccc',
+            metalness: item.metalness !== undefined ? item.metalness : 0.2,
+            roughness: item.roughness !== undefined ? item.roughness : 0.5
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          if (item.position) mesh.position.set(...item.position);
+          if (item.rotation) mesh.rotation.set(...item.rotation);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          modelGroup.add(mesh);
+        }
+      });
+    }
+
+    // 3. จัดการ Element และการเชื่อมต่อ Gemini API
+    const apiKeyInput = document.getElementById('api-key-input');
+    const promptInput = document.getElementById('prompt-input');
+    const generateBtn = document.getElementById('generate-btn');
+    const exportBtn = document.getElementById('export-glb-btn');
+    const appStatus = document.getElementById('app-status');
+    const downloadLink = document.getElementById('download-link');
+
+    // ดึง API Key เดิมจาก LocalStorage (ถ้ามี)
+    const savedApiKey = localStorage.getItem('gemini_api_key');
+    if (savedApiKey) {
+      apiKeyInput.value = savedApiKey;
+    }
+
+    apiKeyInput.addEventListener('change', () => {
+      localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+    });
+
+    function setStatus(state, message) {
+      appStatus.setAttribute('data-status', state);
+      appStatus.textContent = `Status: ${message}`;
+    }
+
+    const SYSTEM_PROMPT = `
+You are a 3D procedural modeling engine. Convert the user's natural language request into a precise 3D primitive layout.
+You MUST output ONLY a valid JSON object matching this schema:
+{
+  "objects": [
+    {
+      "type": "box" | "cylinder" | "sphere" | "cone" | "torus",
+      "parameters": {
+        // for box: "width": float, "height": float, "depth": float
+        // for cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
+        // for sphere: "radius": float, "widthSegments": int, "heightSegments": int
+        // for cone: "radius": float, "height": float, "radialSegments": int
+        // for torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
+      },
+      "position": [x, y, z],
+      "rotation": [rotX_radians, rotY_radians, rotZ_radians],
+      "color": "#hexcode",
+      "metalness": float_0_to_1,
+      "roughness": float_0_to_1
+    }
+  ]
+}
+Ensure objects rest naturally relative to ground level (Y = 0) or stack logically.
+`;
+
+    generateBtn.addEventListener('click', async () => {
+      const apiKey = apiKeyInput.value.trim();
+      const prompt = promptInput.value.trim();
+
+      if (!apiKey) {
+        setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
+        return;
+      }
+
+      if (!prompt) {
+        setStatus('error', 'กรุณาระบุคำอธิบายโมเดล 3D');
+        return;
+      }
+
+      setStatus('generating', 'Connecting to Gemini API...');
+      generateBtn.disabled = true;
+      exportBtn.disabled = true;
+      downloadLink.style.display = 'none';
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }]
+              }
+            ],
+            systemInstruction: {
+              parts: [{ text: SYSTEM_PROMPT }]
+            },
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.1
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!rawText) {
+          throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
+        }
+
+        const specData = JSON.parse(rawText);
+        renderModel(specData);
+        
+        setStatus('ready', 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
+        exportBtn.disabled = false;
+      } catch (err) {
+        setStatus('error', 'เกิดข้อผิดพลาด: ' + err.message);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+
+    exportBtn.addEventListener('click', () => {
+      setStatus('generating', 'กำลังสร้างไฟล์ GLB...');
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        modelGroup,
+        (glb) => {
+          const blob = new Blob([glb], { type: 'model/gltf-binary' });
+          const url = URL.createObjectURL(blob);
+          downloadLink.href = url;
+          downloadLink.style.display = 'block';
+          setStatus('ready', 'Export สำเร็จ! กดดาวน์โหลดไฟล์ด้านล่าง');
+        },
+        (error) => {
+          setStatus('error', 'Export error: ' + error.message);
+        },
+        { binary: true }
+      );
+    });
+  </script>
+</body>
+</html>
