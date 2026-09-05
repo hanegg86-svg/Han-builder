@@ -214,6 +214,92 @@
       word-break: break-word;
     }
 
+    /* Inspector ปรับแต่งชิ้นส่วน 3D */
+    #inspector-container {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #inspector-header {
+      font-size: 13px;
+      font-weight: bold;
+      color: #38bdf8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #selected-part-id {
+      background: #111827;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #facc15;
+      font-size: 12px;
+    }
+    .inspector-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .inspector-row input[type="color"] {
+      border: none;
+      width: 48px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      background: transparent;
+    }
+    .inspector-row input[type="range"] {
+      flex: 1;
+    }
+    #delete-part-btn {
+      background: #ef4444;
+      padding: 8px;
+      font-size: 12px;
+    }
+    #delete-part-btn:hover {
+      background: #dc2626;
+    }
+
+    /* แผงควบคุม Transform Gizmo บน Canvas */
+    #gizmo-toolbar {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 6px;
+      border-radius: 30px;
+      border: 1px solid #444;
+      backdrop-filter: blur(6px);
+    }
+    .gizmo-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 20px;
+      background: #2a2a2a;
+      border: 1px solid #555;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .gizmo-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .gizmo-btn:hover:not(.active) {
+      background: #3a3a3a;
+    }
+
     /* ปุ่มสลับโหมดสัมผัส 3D */
     #touch-toggle-btn {
       position: absolute;
@@ -244,8 +330,8 @@
         -webkit-overflow-scrolling: touch;
       }
       #canvas-container {
-        height: 38vh;
-        min-height: 240px;
+        height: 42vh;
+        min-height: 260px;
         width: 100%;
         flex: none;
       }
@@ -259,6 +345,15 @@
         border-top: 1px solid #333333;
         padding: 16px;
         padding-bottom: 40px;
+      }
+      #gizmo-toolbar {
+        bottom: 8px;
+        padding: 4px;
+        gap: 4px;
+      }
+      .gizmo-btn {
+        padding: 4px 8px;
+        font-size: 11px;
       }
       input[type="password"],
       input[type="text"],
@@ -282,6 +377,13 @@
 
   <div id="canvas-container">
     <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
+    
+    <div id="gizmo-toolbar">
+      <button id="gizmo-translate" class="gizmo-btn active" type="button" title="Translate (เลื่อนตำแหน่ง)">✥ ย้าย</button>
+      <button id="gizmo-rotate" class="gizmo-btn" type="button" title="Rotate (หมุนองศา)">🔄 หมุน</button>
+      <button id="gizmo-scale" class="gizmo-btn" type="button" title="Scale (ยืด/ขยาย)">📐 ขยาย</button>
+      <button id="gizmo-deselect" class="gizmo-btn" type="button" title="Deselect (ปลดการเลือก)">❌ ปลดเลือก</button>
+    </div>
   </div>
 
   <div id="sidebar">
@@ -312,6 +414,27 @@
       data-testid="prompt-input" 
       placeholder="ตัวอย่าง: สร้างหุ่นยนต์สีเงิน หรือ สั่งต่อยอด: เพิ่มหมวกคาวบอยสีน้ำตาล, เปลี่ยนสีตัวเป็นสีแดง"></textarea>
 
+    <!-- กล่องปรับแต่งชิ้นส่วนที่เลือก (Inspector) -->
+    <div id="inspector-container">
+      <div id="inspector-header">
+        <span>⚙️ ชิ้นส่วนที่เลือก</span>
+        <span id="selected-part-id">-</span>
+      </div>
+      <div class="inspector-row">
+        <span>สีชิ้นส่วน:</span>
+        <input type="color" id="part-color-input" value="#cccccc" />
+      </div>
+      <div class="inspector-row">
+        <span>Roughness (ด้าน): <strong id="roughness-val">0.65</strong></span>
+        <input type="range" id="part-roughness-input" min="0" max="1" step="0.05" value="0.65" />
+      </div>
+      <div class="inspector-row">
+        <span>Metalness (โลหะ): <strong id="metalness-val">0.05</strong></span>
+        <input type="range" id="part-metalness-input" min="0" max="1" step="0.05" value="0.05" />
+      </div>
+      <button id="delete-part-btn" type="button">🗑️ ลบชิ้นส่วนนี้ออกจากโมเดล</button>
+    </div>
+
     <div id="history-box">
       <div id="history-box-title">ลำดับการปรับปรุงคำสั่งสะสม (Iterative History):</div>
       <ol id="history-list"></ol>
@@ -341,6 +464,7 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
     // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
     if ('serviceWorker' in navigator) {
@@ -370,6 +494,14 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+
+    // ระบบ TransformControls (3D Gizmo)
+    const transformControls = new TransformControls(camera, renderer.domElement);
+    scene.add(transformControls);
+
+    transformControls.addEventListener('dragging-changed', (event) => {
+      controls.enabled = !event.value;
+    });
 
     const touchToggleBtn = document.getElementById('touch-toggle-btn');
     let isTouchLocked = false;
@@ -466,8 +598,23 @@
       controls.update();
     }
 
+    // ฟังก์ชันอัปเดตรูปพรีวิว Snapshot
+    function updatePreviewSnapshot() {
+      renderer.render(scene, camera);
+      const dataUrl = renderer.domElement.toDataURL('image/png');
+      const previewContainer = document.getElementById('preview-container');
+      const previewImg = document.getElementById('preview-image');
+      const downloadImgBtn = document.getElementById('download-image-btn');
+
+      previewImg.src = dataUrl;
+      downloadImgBtn.href = dataUrl;
+      previewContainer.style.display = 'flex';
+    }
+
     // 4. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec ที่รองรับ Hierarchy, Tube Curves และ Plane
     function renderModel(spec) {
+      deselectPart();
+
       while (modelGroup.children.length > 0) {
         const obj = modelGroup.children[0];
         disposeObject(obj);
@@ -576,6 +723,7 @@
           mesh.receiveShadow = true;
 
           const itemId = item.id || `obj_${index}`;
+          mesh.userData = { id: itemId };
           objectMap.set(itemId, mesh);
 
           // รองรับระบบลำดับชั้น Parent-Child
@@ -588,16 +736,7 @@
       });
 
       fitCameraToObject(modelGroup);
-      renderer.render(scene, camera);
-
-      const dataUrl = renderer.domElement.toDataURL('image/png');
-      const previewContainer = document.getElementById('preview-container');
-      const previewImg = document.getElementById('preview-image');
-      const downloadImgBtn = document.getElementById('download-image-btn');
-
-      previewImg.src = dataUrl;
-      downloadImgBtn.href = dataUrl;
-      previewContainer.style.display = 'flex';
+      updatePreviewSnapshot();
     }
 
     // 5. จัดการ Element, สถานะสะสม และการเชื่อมต่อ Gemini API
@@ -617,9 +756,26 @@
     const historyBox = document.getElementById('history-box');
     const historyList = document.getElementById('history-list');
 
+    // Inspector Elements
+    const inspectorContainer = document.getElementById('inspector-container');
+    const selectedPartId = document.getElementById('selected-part-id');
+    const partColorInput = document.getElementById('part-color-input');
+    const partRoughnessInput = document.getElementById('part-roughness-input');
+    const partMetalnessInput = document.getElementById('part-metalness-input');
+    const roughnessVal = document.getElementById('roughness-val');
+    const metalnessVal = document.getElementById('metalness-val');
+    const deletePartBtn = document.getElementById('delete-part-btn');
+
+    // Gizmo Toolbar Buttons
+    const gizmoTranslateBtn = document.getElementById('gizmo-translate');
+    const gizmoRotateBtn = document.getElementById('gizmo-rotate');
+    const gizmoScaleBtn = document.getElementById('gizmo-scale');
+    const gizmoDeselectBtn = document.getElementById('gizmo-deselect');
+
     let currentSpec = null;
     let promptSession = [];
     const modelHistory = [];
+    let selectedMesh = null;
 
     function updateHistoryUI() {
       historyList.innerHTML = '';
@@ -628,7 +784,7 @@
         generateBtn.textContent = 'Generate 3D';
       } else {
         historyBox.style.display = 'flex';
-        promptSession.forEach((text, index) => {
+        promptSession.forEach((text) => {
           const li = document.createElement('li');
           li.textContent = text;
           historyList.appendChild(li);
@@ -640,6 +796,156 @@
     function updateUndoButtonState() {
       undoBtn.disabled = modelHistory.length <= 1;
     }
+
+    // ฟังก์ชันเลือกชิ้นส่วน 3D และเปิด Inspector
+    function selectPart(mesh) {
+      if (!mesh || !mesh.userData || !mesh.userData.id) return;
+      selectedMesh = mesh;
+      transformControls.attach(mesh);
+      
+      const partId = mesh.userData.id;
+      selectedPartId.textContent = partId;
+      inspectorContainer.style.display = 'flex';
+
+      if (mesh.material && mesh.material.color) {
+        partColorInput.value = '#' + mesh.material.color.getHexString();
+      }
+      if (mesh.material && mesh.material.roughness !== undefined) {
+        partRoughnessInput.value = mesh.material.roughness;
+        roughnessVal.textContent = mesh.material.roughness.toFixed(2);
+      }
+      if (mesh.material && mesh.material.metalness !== undefined) {
+        partMetalnessInput.value = mesh.material.metalness;
+        metalnessVal.textContent = mesh.material.metalness.toFixed(2);
+      }
+    }
+
+    // ฟังก์ชันปลดการเลือกชิ้นส่วน
+    function deselectPart() {
+      selectedMesh = null;
+      transformControls.detach();
+      inspectorContainer.style.display = 'none';
+    }
+
+    // ควบคุมโหมด Gizmo
+    function setGizmoMode(mode) {
+      transformControls.setMode(mode);
+      [gizmoTranslateBtn, gizmoRotateBtn, gizmoScaleBtn].forEach(btn => btn.classList.remove('active'));
+      if (mode === 'translate') gizmoTranslateBtn.classList.add('active');
+      if (mode === 'rotate') gizmoRotateBtn.classList.add('active');
+      if (mode === 'scale') gizmoScaleBtn.classList.add('active');
+    }
+
+    gizmoTranslateBtn.addEventListener('click', () => setGizmoMode('translate'));
+    gizmoRotateBtn.addEventListener('click', () => setGizmoMode('rotate'));
+    gizmoScaleBtn.addEventListener('click', () => setGizmoMode('scale'));
+    gizmoDeselectBtn.addEventListener('click', deselectPart);
+
+    // Two-Way Binding: เมื่อขยับ Gizmo ให้อัปเดตค่าพิกัดกลับเข้า currentSpec
+    transformControls.addEventListener('objectChange', () => {
+      if (!selectedMesh || !selectedMesh.userData || !currentSpec) return;
+      const targetId = selectedMesh.userData.id;
+      const targetObj = currentSpec.objects.find(o => o.id === targetId);
+
+      if (targetObj) {
+        targetObj.position = [
+          parseFloat(selectedMesh.position.x.toFixed(4)),
+          parseFloat(selectedMesh.position.y.toFixed(4)),
+          parseFloat(selectedMesh.position.z.toFixed(4))
+        ];
+        targetObj.rotation = [
+          parseFloat(selectedMesh.rotation.x.toFixed(4)),
+          parseFloat(selectedMesh.rotation.y.toFixed(4)),
+          parseFloat(selectedMesh.rotation.z.toFixed(4))
+        ];
+        targetObj.scale = [
+          parseFloat(selectedMesh.scale.x.toFixed(4)),
+          parseFloat(selectedMesh.scale.y.toFixed(4)),
+          parseFloat(selectedMesh.scale.z.toFixed(4))
+        ];
+      }
+      updatePreviewSnapshot();
+    });
+
+    // Inspector Event Listeners
+    partColorInput.addEventListener('input', (e) => {
+      if (!selectedMesh || !currentSpec) return;
+      const newColor = e.target.value;
+      if (selectedMesh.material) {
+        selectedMesh.material.color.set(newColor);
+      }
+      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+      if (targetObj) targetObj.color = newColor;
+      updatePreviewSnapshot();
+    });
+
+    partRoughnessInput.addEventListener('input', (e) => {
+      if (!selectedMesh || !currentSpec) return;
+      const val = parseFloat(e.target.value);
+      roughnessVal.textContent = val.toFixed(2);
+      if (selectedMesh.material) {
+        selectedMesh.material.roughness = val;
+      }
+      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+      if (targetObj) targetObj.roughness = val;
+    });
+
+    partMetalnessInput.addEventListener('input', (e) => {
+      if (!selectedMesh || !currentSpec) return;
+      const val = parseFloat(e.target.value);
+      metalnessVal.textContent = val.toFixed(2);
+      if (selectedMesh.material) {
+        selectedMesh.material.metalness = val;
+      }
+      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+      if (targetObj) targetObj.metalness = val;
+    });
+
+    deletePartBtn.addEventListener('click', () => {
+      if (!selectedMesh || !currentSpec) return;
+      const idToDelete = selectedMesh.userData.id;
+
+      currentSpec.objects = currentSpec.objects.filter(o => o.id !== idToDelete && o.parent !== idToDelete);
+      deselectPart();
+      renderModel(currentSpec);
+      setStatus('ready', `ลบชิ้นส่วน "${idToDelete}" สำเร็จ`);
+    });
+
+    // Raycaster ตรวจจับการคลิกเลือกชิ้นส่วนบน Canvas
+    let pointerDownCoord = { x: 0, y: 0 };
+
+    container.addEventListener('pointerdown', (e) => {
+      pointerDownCoord = { x: e.clientX, y: e.clientY };
+    });
+
+    container.addEventListener('pointerup', (e) => {
+      if (e.target !== renderer.domElement) return;
+      const dist = Math.hypot(e.clientX - pointerDownCoord.x, e.clientY - pointerDownCoord.y);
+      if (dist > 5) return; // เป็นการลากหมุนหน้าจอ ไม่ใช่การคลิก
+      if (transformControls.dragging) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(modelGroup.children, true);
+
+      if (intersects.length > 0) {
+        let hitObj = intersects[0].object;
+        while (hitObj && !hitObj.userData?.id && hitObj.parent && hitObj.parent !== modelGroup) {
+          hitObj = hitObj.parent;
+        }
+        if (hitObj && hitObj.userData?.id) {
+          selectPart(hitObj);
+        }
+      } else {
+        deselectPart();
+      }
+    });
 
     let currentImageBase64 = null;
     let currentImageMimeType = null;
@@ -902,6 +1208,7 @@ CRITICAL COMPOSITION RULES:
       promptSession = [];
       modelHistory.length = 0;
 
+      deselectPart();
       promptInput.value = '';
       imageInput.value = '';
       currentImageBase64 = null;
@@ -926,6 +1233,7 @@ CRITICAL COMPOSITION RULES:
     });
 
     exportBtn.addEventListener('click', () => {
+      deselectPart();
       setStatus('generating', 'กำลังสร้างไฟล์ GLB...');
       const exporter = new GLTFExporter();
       exporter.parse(
