@@ -270,7 +270,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: วาริโอถือถุงทองคำ หรือ บ้านมาริโอ้ไดโอรามา หรือ รายละเอียดเพิ่มเติม"></textarea>
+      placeholder="ตัวอย่าง: ตัวละครใบไม้สีเขียวมีแขนขาเส้น หรือ รายละเอียดเพิ่มเติม"></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
@@ -340,7 +340,7 @@
       }
     });
 
-    // ปรับระบบแสงแบบ Vinyl Toy Studio: แสงหลักบน แสงเสริมส่องลบเงาใต้คาง/หมวก และไฟกึ่งทรงกลม
+    // ปรับระบบแสงแบบ Studio: มีแสงหลัก แสงขอบ และแสงส่องตรงจากด้านหน้า
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
@@ -481,7 +481,6 @@
         }
 
         if (geometry) {
-          // ค่าผิวสัมผัสสไตล์ Matte Vinyl Toy
           const material = new THREE.MeshStandardMaterial({
             color: item.color || '#cccccc',
             metalness: item.metalness !== undefined ? item.metalness : 0.05,
@@ -570,8 +569,8 @@
     }
 
     const SYSTEM_PROMPT = `
-You are a master 3D stylized procedural modeler specialized in Nintendo-style collectible vinyl figures and isometric dioramas.
-Deconstruct the user's natural language request and/or 2D reference image into 45 to 80 carefully positioned primitives.
+You are a universal 3D procedural modeling engine. Your goal is to recreate EXACTLY what is shown in the user's reference image or text prompt into a set of 3D primitives.
+
 You MUST output ONLY a valid JSON object matching this schema:
 {
   "objects": [
@@ -598,48 +597,27 @@ You MUST output ONLY a valid JSON object matching this schema:
   ]
 }
 
-ARCHETYPE-SPECIFIC MODELING GUIDELINES:
+VISUAL-FIRST DECONSTRUCTION RULES:
+1. FOCUS ON THE ACTUAL CENTRAL SUBJECT:
+   - If the image is a mobile screenshot with web browser UI, search bars, or text headers, IGNORE the surrounding interface completely. Focus ONLY on the central character or object.
+   - Do NOT assume any specific franchise, costume, or overalls unless it is genuinely visible on the subject!
 
-1. HUMANS & PLUMBERS (Mario, Luigi, Wario):
-   - Head & Face:
-     * Luigi: Slim, elongated oval head, prominent nose, smooth curved mustache.
-     * Wario: Wide head, pointed elf ears (tilted cones on sides), huge hot-pink bulbous teardrop nose (#ff4081 or #e91e63), and jagged zigzag mustache (use extrude or angled boxes/capsules).
-     * Cap & Visor: Cap dome on top; visor MUST protrude forward (+Z) angled downward. Add white emblem circle decal with logo (L, W, M) on front.
-   - Overalls & Costume:
-     * Colored shirt base + blue/purple overalls. Include shoulder straps and two distinct yellow button discs (#ffd700) on the chest.
-     * White gloves with cuffs; chunky shoes/boots with thick sole layer.
-   - Props (e.g. Wario's Money Bag):
-     * Bag: Large cream/tan sphere (#e6d7b8) pinched at the top neck with a cylinder collar and ruffled top. Add brown 'W' badge on the bag face.
-     * Gold coins: Thin yellow/gold cylinders (#ffd700) overflowing from the bag and scattered on the floor plate.
+2. CLASSIFICATION & ADAPTIVE MODELING:
+   - CATEGORY A: LIVING OBJECTS / ANTHROPOMORPHIC SHAPES (e.g. Leafy from BFDI, living coins, teardrops, apples):
+     * Body: It is NOT a humanoid torso with clothes! Model the actual object shape using "extrude" with custom 2D polygon shape points (e.g. leaf outline with pointed tip at top and rounded lobes at bottom), or a flattened sphere/box with the exact color (e.g. vibrant lime green #48d83c).
+     * Facial Features: The face is 2D minimalist lines drawn on the object surface. Use thin black capsules/boxes or torus segments placed slightly on the front surface (+Z): simple black oval eyes, curved black smile line, black eyebrow strokes. Do NOT add a 3D bulbous human nose or mustache!
+     * Limbs: Thin black stick arms and legs (radius ~ 0.04 - 0.08) using thin cylinders or capsules (#111111) connecting directly to the main object.
+   - CATEGORY B: HUMANOIDS & PLUMBERS:
+     * Model the head, distinct cap, nose, mustache, and actual clothing (shirt + overalls/pants) ONLY when the character is genuinely a human or plumber wearing them.
+   - CATEGORY C: CREATURES & DINOSAURS:
+     * Model large snout, oval vertical eyes, tail, back shell, spines, and boots if the character is a creature/dinosaur.
+   - CATEGORY D: PROPS, ARCHITECTURE & DIORAMAS:
+     * Model roofs, bases, walls, chimneys, and ground plates.
 
-2. APES & PRIMATES (Donkey Kong):
-   - Crest: Pointed hair swirl tuft on top of head (curved cone or extrude).
-   - Face: Tan/peach rounded muzzle/jaw protruding forward; dark brown hooded brow ridge with eyes nestled underneath.
-   - Muscular Build: Broad shoulder capsules, heavy curved forearms, large clenched fists with fingers.
-   - Chest & Tie: Light tan muscular chest/belly plate overlapping deep brown torso. Red necktie (#e52521) draping down the chest with yellow "DK" badge.
-
-3. REPTILES, TURTLES & DRAGONS (Yoshi, Koopa Troopa, Bowser Jr):
-   - Snouts & Jaws: Big protruding bulbous green/orange muzzle on +Z. Light cream/white jaw and cheeks wrapping beneath.
-   - Eyes: Two tall vertical oval globes (scale [0.6, 1.2, 0.6]) close together atop the snout with dark pupils.
-   - Shells:
-     * Rounded dome shell on back (-Z).
-     * Thick white/cream perimeter rim using a torus.
-     * Belly plate divided into yellow/cream ribbed sections.
-   - Spikes & Collars (Bowser Jr):
-     * Red topknot hair tuft (curved cones).
-     * Spiked collars: Black torus bands with tiny white cone spikes around neck and wrists.
-     * Bib/Bandana: Curved triangular chest plate with drawing/flame accents.
-     * Junior Clown Car (if present): Large white bowl-shaped vehicle (lathe or scaled sphere), rimmed cockpit, cartoon face with mouth on vehicle front, small green/yellow propeller underneath.
-
-4. BUILDINGS & DIORAMAS (Mario House Isometric):
-   - Ground Base: Chamfered square plinth (dirt/brown box) topped with a vibrant green grass plate and stone pathway tiles.
-   - House Architecture: Red cross-gabled brick roof made with intersecting wedges/boxes. Brick textured main walls, arched doorway with round peephole window.
-   - Details & Props: Brick chimney with graduated white/grey smoke puff spheres rising up, floating yellow question-mark [?] block, golden coin atop roof, small mushrooms and flower tufts around the yard.
-
-5. COLOR & FINISH:
-   - Use vivid, saturated Nintendo palette colors.
-   - Keep metalness low (0.02 - 0.08) and roughness medium-high (0.6 - 0.75) for a premium matte vinyl toy appearance.
-   - Always allocate 45 to 80 primitives to build every iconic element and avoid leaving major silhouettes flat.
+3. COLOR AND PROPORTIONS:
+   - Sample the exact dominant colors from the image (e.g. Leafy: bright green body, black limbs and face lines).
+   - Use non-uniform scale to match proportions accurately.
+   - Keep metalness low (0.02 - 0.08) and roughness around 0.65 for clean cartoon styling.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -674,7 +652,7 @@ ARCHETYPE-SPECIFIC MODELING GUIDELINES:
         });
       }
 
-      const userText = prompt || 'วิเคราะห์ภาพอ้างอิงนี้และถอดแบบเป็นโมเดล 3D สไตล์ฟิกเกอร์ไวนิลอย่างละเอียดครบถ้วนทุกจุดเด่น ทั้งรูปทรง จมูก หนวด กระดอง พร็อพ และท่าทาง';
+      const userText = prompt || 'วิเคราะห์เฉพาะวัตถุหรือตัวละครหลักที่ปรากฏตรงกลางภาพ (มองข้าม UI หรือข้อความรอบข้าง) แล้วถอดแบบโครงสร้าง รูปทรง สีสัน ใบหน้า และแขนขาออกมาเป็น 3D อย่างซื่อตรงตามที่เห็นจริงในภาพ';
       parts.push({ text: userText });
 
       try {
