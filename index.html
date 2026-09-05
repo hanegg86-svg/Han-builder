@@ -284,19 +284,30 @@
       background: #6b2a2a;
     }
 
-    /* แผงปรับตำแหน่งและขนาดสติ๊กเกอร์หน้าตา */
+    /* แผงปรับแต่งตำแหน่ง/ขนาดสติ๊กเกอร์หน้าตา (Floating Toolbar ใต้ Model) */
     #sticker-adjust-panel {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
       display: none;
       flex-direction: column;
-      gap: 8px;
-      margin-top: 6px;
-      padding: 10px;
-      background: #131b26;
-      border-radius: 6px;
-      border: 1px dashed #3b82f6;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(59, 130, 246, 0.6);
+      border-radius: 12px;
+      padding: 8px 10px;
+      backdrop-filter: blur(8px);
+      max-width: 94%;
+      width: 360px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
     }
-    .adjust-section-title {
-      font-size: 12px;
+    .adjust-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
       font-weight: bold;
       color: #93c5fd;
     }
@@ -306,7 +317,7 @@
       gap: 4px;
     }
     .adjust-btn {
-      padding: 8px 4px;
+      padding: 6px 2px;
       font-size: 11px;
       background: #1e293b;
       border: 1px solid #334155;
@@ -435,8 +446,8 @@
         -webkit-overflow-scrolling: touch;
       }
       #canvas-container {
-        height: 42vh;
-        min-height: 260px;
+        height: 44vh;
+        min-height: 270px;
         width: 100%;
         flex: none;
       }
@@ -467,6 +478,15 @@
         padding: 5px 9px;
         font-size: 11px;
       }
+      #sticker-adjust-panel {
+        bottom: 8px;
+        padding: 6px 8px;
+        width: 95%;
+      }
+      .adjust-btn {
+        padding: 5px 2px;
+        font-size: 10px;
+      }
       input[type="password"],
       input[type="text"],
       input[type="file"],
@@ -496,6 +516,31 @@
     </div>
 
     <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
+
+    <!-- แผงปรับตำแหน่งและขยายสติ๊กเกอร์หน้าตา วางลอยอยู่ใต้โมเดลบน Canvas โดยตรง -->
+    <div id="sticker-adjust-panel">
+      <div class="adjust-header">
+        <span>🎮 ปรับสติ๊กเกอร์หน้าตา (มองเห็นได้ทันที)</span>
+      </div>
+      <div class="adjust-grid-row">
+        <button id="stk-up-btn" class="adjust-btn" type="button">⬆️ ขึ้น</button>
+        <button id="stk-down-btn" class="adjust-btn" type="button">⬇️ ลง</button>
+        <button id="stk-left-btn" class="adjust-btn" type="button">⬅️ ซ้าย</button>
+        <button id="stk-right-btn" class="adjust-btn" type="button">➡️ ขวา</button>
+      </div>
+      <div class="adjust-grid-row">
+        <button id="stk-forward-btn" class="adjust-btn" type="button" title="ดันออกมาข้างหน้ากันจม">⏫ ดันหน้า</button>
+        <button id="stk-backward-btn" class="adjust-btn" type="button" title="ดันเข้าด้านในแนบผิว">⏬ ดันลึก</button>
+        <button id="stk-scale-up-btn" class="adjust-btn" type="button">➕ ขยาย</button>
+        <button id="stk-scale-down-btn" class="adjust-btn" type="button">➖ ย่อ</button>
+      </div>
+      <div class="adjust-grid-row">
+        <button id="stk-stretch-x-plus" class="adjust-btn" type="button">↔️ กว้าง</button>
+        <button id="stk-stretch-x-minus" class="adjust-btn" type="button">🤏 แคบ</button>
+        <button id="stk-stretch-y-plus" class="adjust-btn" type="button">↕️ สูง</button>
+        <button id="stk-stretch-y-minus" class="adjust-btn" type="button">🤏 สั้น</button>
+      </div>
+    </div>
   </div>
 
   <div id="sidebar">
@@ -548,30 +593,6 @@
         <button id="sticker-angry-btn" class="sticker-btn" type="button" disabled>😠 BFDI โกรธ</button>
         <button id="sticker-cute-btn" class="sticker-btn" type="button" disabled>🥺 ตาหวานอนิเมะ</button>
         <button id="sticker-remove-btn" class="sticker-btn" type="button" disabled>❌ ลบสติกเกอร์หน้าตา</button>
-      </div>
-
-      <!-- แผงปุ่มปรับแต่งตำแหน่ง/ขนาดสติ๊กเกอร์ -->
-      <div id="sticker-adjust-panel">
-        <div class="adjust-section-title">🕹️ ปรับตำแหน่งสติกเกอร์ (เลื่อนให้ตรงใบหน้า):</div>
-        <div class="adjust-grid-row">
-          <button id="stk-up-btn" class="adjust-btn" type="button">⬆️ ขึ้น</button>
-          <button id="stk-down-btn" class="adjust-btn" type="button">⬇️ ลง</button>
-          <button id="stk-left-btn" class="adjust-btn" type="button">⬅️ ซ้าย</button>
-          <button id="stk-right-btn" class="adjust-btn" type="button">➡️ ขวา</button>
-        </div>
-        <div class="adjust-grid-row">
-          <button id="stk-forward-btn" class="adjust-btn" type="button" title="ดันออกมาข้างหน้ากันจม">⏫ ดันหน้า</button>
-          <button id="stk-backward-btn" class="adjust-btn" type="button" title="ดันเข้าด้านในแนบผิว">⏬ ดันลึก</button>
-          <button id="stk-scale-up-btn" class="adjust-btn" type="button">➕ ขยาย</button>
-          <button id="stk-scale-down-btn" class="adjust-btn" type="button">➖ ย่อ</button>
-        </div>
-        <div class="adjust-section-title">📐 ยืด/หดรูปหน้า & รีเซ็ต:</div>
-        <div class="adjust-grid-row">
-          <button id="stk-stretch-x-plus" class="adjust-btn" type="button">↔️ กว้างขึ้น</button>
-          <button id="stk-stretch-x-minus" class="adjust-btn" type="button">🤏 แคบลง</button>
-          <button id="stk-stretch-y-plus" class="adjust-btn" type="button">↕️ สูงขึ้น</button>
-          <button id="stk-stretch-y-minus" class="adjust-btn" type="button">🤏 สั้นลง</button>
-        </div>
       </div>
     </div>
 
@@ -953,7 +974,7 @@
     const stickerRemoveBtn = document.getElementById('sticker-remove-btn');
     const stickerButtons = [stickerHappyBtn, stickerShockBtn, stickerAngryBtn, stickerCuteBtn, stickerRemoveBtn];
 
-    // Sticker Transform Adjustment Elements
+    // Sticker Transform Adjustment Elements (On-Canvas)
     const stickerAdjustPanel = document.getElementById('sticker-adjust-panel');
     const stkUpBtn = document.getElementById('stk-up-btn');
     const stkDownBtn = document.getElementById('stk-down-btn');
@@ -1465,9 +1486,9 @@
       stickerMesh.position.set(center.x, center.y + size.y * 0.35, box.max.z + 0.03);
       modelGroup.add(stickerMesh);
 
-      // แสดงแผงปรับแต่งตำแหน่งและสัดส่วน
+      // แสดงแผงปรับแต่งตำแหน่งและสัดส่วนบน Canvas Viewport
       stickerAdjustPanel.style.display = 'flex';
-      setStatus('ready', `แปะสติกเกอร์หน้าตาสำเร็จ! สามารถใช้ปุ่มด้านล่างเลื่อนขึ้น-ลง ขยาย หรือยืดสัดส่วนหน้าได้ตามต้องการ`);
+      setStatus('ready', `แปะสติกเกอร์หน้าตาแล้ว! แตะปุ่มปรับใต้โมเดลเพื่อเลื่อน ขยาย หรือยืดสัดส่วนได้ทันที`);
       updatePreviewSnapshot();
     }
 
