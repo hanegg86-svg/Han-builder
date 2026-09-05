@@ -270,7 +270,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: มาริโอ้วิ่ง หมวกแดง เอี๊ยมน้ำเงิน จมูกโต หนวดดำ หรือ รายละเอียดเพิ่มเติม"></textarea>
+      placeholder="ตัวอย่าง: วาริโอถือถุงทองคำ หรือ บ้านมาริโอ้ไดโอรามา หรือ รายละเอียดเพิ่มเติม"></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
@@ -340,18 +340,21 @@
       }
     });
 
-    // ปรับปรุงระบบแสง: เพิ่มแสงรอบทิศทาง และ Front Fill Light ลบเงาใต้หมวก/ใบหน้า
+    // ปรับระบบแสงแบบ Vinyl Toy Studio: แสงหลักบน แสงเสริมส่องลบเงาใต้คาง/หมวก และไฟกึ่งทรงกลม
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(10, 15, 10);
     dirLight.castShadow = true;
     scene.add(dirLight);
 
-    // Fill Light ส่องตรงจากด้านหน้า เพื่อให้รายละเอียดใบหน้า ตา หนวด สว่างชัดเจน
     const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    fillLight.position.set(0, 3, 10);
+    fillLight.position.set(0, 2, 10);
     scene.add(fillLight);
 
     const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
@@ -478,10 +481,11 @@
         }
 
         if (geometry) {
+          // ค่าผิวสัมผัสสไตล์ Matte Vinyl Toy
           const material = new THREE.MeshStandardMaterial({
             color: item.color || '#cccccc',
-            metalness: item.metalness !== undefined ? item.metalness : 0.1,
-            roughness: item.roughness !== undefined ? item.roughness : 0.6
+            metalness: item.metalness !== undefined ? item.metalness : 0.05,
+            roughness: item.roughness !== undefined ? item.roughness : 0.65
           });
 
           const mesh = new THREE.Mesh(geometry, material);
@@ -566,7 +570,8 @@
     }
 
     const SYSTEM_PROMPT = `
-You are an expert master 3D procedural character artist. Convert the user's request and 2D image into an expressive, recognizable 3D character using 40 to 65 primitives.
+You are a master 3D stylized procedural modeler specialized in Nintendo-style collectible vinyl figures and isometric dioramas.
+Deconstruct the user's natural language request and/or 2D reference image into 45 to 80 carefully positioned primitives.
 You MUST output ONLY a valid JSON object matching this schema:
 {
   "objects": [
@@ -593,34 +598,48 @@ You MUST output ONLY a valid JSON object matching this schema:
   ]
 }
 
-STRICT ARCHITECTURAL RULES FOR RECOGNIZABLE CHARACTERS:
-1. HEAD, CAP & FACIAL Z-STACKING (PREVENT CLIPPING):
-   - Face Base: Spherical/oval head (#fed0b3 or skin tone).
-   - Cap / Hat:
-     * Main cap dome on top of head.
-     * Cap Visor / Brim: MUST be a distinct, flattened oval or tilted box positioned below the cap front and tilted slightly downward (pitch rotation X ~ 0.2 - 0.4 rad), protruding outward (+Z) in front of the forehead.
-     * Cap Emblem / Badge: Thin white disc in front center of cap.
-   - NOSE (THE MOST PROMINENT FEATURE):
-     * A large bulbous sphere (#f7bda0 or skin tone) placed WAY FORWARD (+Z) so it completely sits in front of the face and under the visor.
-   - MUSTACHE:
-     * Dark brown/black (#2b1810) curved structure placed immediately under the nose, resting across the mouth area, extended forward so it does not drown into the head mesh. Use 2 to 4 capsules/boxes or a scaled torus segment.
-   - EYES & EYEBROWS:
-     * Tall oval whites (scale [0.4, 0.7, 0.1]), blue/brown irises, black pupils placed on the face surface just above the nose.
-   - EARS & HAIR:
-     * Brown hair tufts/sideburns peeking out under the cap sides and back. Rounded ears on left and right (+-X).
-2. COSTUME & DETAILS:
-   - Red shirt: Torso base and red upper arms.
-   - Overalls: Blue body base (#0b4ea2) with two distinct blue straps rising over the shoulders.
-   - Yellow Buttons: Two distinct flat golden-yellow cylinders/discs (#ffd700) placed on the chest at the bottom of the straps (+Z offset).
-   - White Gloves: Spherical/capsule hands with white cuff rings around wrists.
-   - Shoes: Brown work boots (#5c2c16) with distinct sole pads at bottom.
-3. DYNAMIC POSE & ARTICULATION (VITAL):
-   - Do NOT make a static T-pose if the image shows action!
-   - Legs: If walking or running, rotate the hip/leg joints along the X-axis (one leg rotated forward, the other rotated backward) with bent knees/boots.
-   - Arms: Swing arms to match the gait (one arm raised forward bent at elbow, one arm swinging backward).
-   - Tilt the head slightly if the character looks energetic.
-4. PRIMITIVE BUDGET & SCALE:
-   - Use 40 to 65 primitives to capture every layer. Ensure pieces touch or overlap logically without ugly floating air gaps.
+ARCHETYPE-SPECIFIC MODELING GUIDELINES:
+
+1. HUMANS & PLUMBERS (Mario, Luigi, Wario):
+   - Head & Face:
+     * Luigi: Slim, elongated oval head, prominent nose, smooth curved mustache.
+     * Wario: Wide head, pointed elf ears (tilted cones on sides), huge hot-pink bulbous teardrop nose (#ff4081 or #e91e63), and jagged zigzag mustache (use extrude or angled boxes/capsules).
+     * Cap & Visor: Cap dome on top; visor MUST protrude forward (+Z) angled downward. Add white emblem circle decal with logo (L, W, M) on front.
+   - Overalls & Costume:
+     * Colored shirt base + blue/purple overalls. Include shoulder straps and two distinct yellow button discs (#ffd700) on the chest.
+     * White gloves with cuffs; chunky shoes/boots with thick sole layer.
+   - Props (e.g. Wario's Money Bag):
+     * Bag: Large cream/tan sphere (#e6d7b8) pinched at the top neck with a cylinder collar and ruffled top. Add brown 'W' badge on the bag face.
+     * Gold coins: Thin yellow/gold cylinders (#ffd700) overflowing from the bag and scattered on the floor plate.
+
+2. APES & PRIMATES (Donkey Kong):
+   - Crest: Pointed hair swirl tuft on top of head (curved cone or extrude).
+   - Face: Tan/peach rounded muzzle/jaw protruding forward; dark brown hooded brow ridge with eyes nestled underneath.
+   - Muscular Build: Broad shoulder capsules, heavy curved forearms, large clenched fists with fingers.
+   - Chest & Tie: Light tan muscular chest/belly plate overlapping deep brown torso. Red necktie (#e52521) draping down the chest with yellow "DK" badge.
+
+3. REPTILES, TURTLES & DRAGONS (Yoshi, Koopa Troopa, Bowser Jr):
+   - Snouts & Jaws: Big protruding bulbous green/orange muzzle on +Z. Light cream/white jaw and cheeks wrapping beneath.
+   - Eyes: Two tall vertical oval globes (scale [0.6, 1.2, 0.6]) close together atop the snout with dark pupils.
+   - Shells:
+     * Rounded dome shell on back (-Z).
+     * Thick white/cream perimeter rim using a torus.
+     * Belly plate divided into yellow/cream ribbed sections.
+   - Spikes & Collars (Bowser Jr):
+     * Red topknot hair tuft (curved cones).
+     * Spiked collars: Black torus bands with tiny white cone spikes around neck and wrists.
+     * Bib/Bandana: Curved triangular chest plate with drawing/flame accents.
+     * Junior Clown Car (if present): Large white bowl-shaped vehicle (lathe or scaled sphere), rimmed cockpit, cartoon face with mouth on vehicle front, small green/yellow propeller underneath.
+
+4. BUILDINGS & DIORAMAS (Mario House Isometric):
+   - Ground Base: Chamfered square plinth (dirt/brown box) topped with a vibrant green grass plate and stone pathway tiles.
+   - House Architecture: Red cross-gabled brick roof made with intersecting wedges/boxes. Brick textured main walls, arched doorway with round peephole window.
+   - Details & Props: Brick chimney with graduated white/grey smoke puff spheres rising up, floating yellow question-mark [?] block, golden coin atop roof, small mushrooms and flower tufts around the yard.
+
+5. COLOR & FINISH:
+   - Use vivid, saturated Nintendo palette colors.
+   - Keep metalness low (0.02 - 0.08) and roughness medium-high (0.6 - 0.75) for a premium matte vinyl toy appearance.
+   - Always allocate 45 to 80 primitives to build every iconic element and avoid leaving major silhouettes flat.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -655,7 +674,7 @@ STRICT ARCHITECTURAL RULES FOR RECOGNIZABLE CHARACTERS:
         });
       }
 
-      const userText = prompt || 'วิเคราะห์ภาพตัวละครนี้และถอดแบบ 3D อย่างละเอียด: จัดวางปีกหมวก, จมูกโตยื่น, หนวดใต้จมูก, สายเอี๊ยม, กระดุมเหลือง และจัดท่าทางเดิน/วิ่งให้มีชีวิตชีวาตามรูป';
+      const userText = prompt || 'วิเคราะห์ภาพอ้างอิงนี้และถอดแบบเป็นโมเดล 3D สไตล์ฟิกเกอร์ไวนิลอย่างละเอียดครบถ้วนทุกจุดเด่น ทั้งรูปทรง จมูก หนวด กระดอง พร็อพ และท่าทาง';
       parts.push({ text: userText });
 
       try {
