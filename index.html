@@ -284,32 +284,25 @@
       background: #6b2a2a;
     }
 
-    /* แผงปรับแต่งตำแหน่ง/ขนาดสติ๊กเกอร์หน้าตา (Floating Toolbar ใต้ Model) */
+    /* แผงปรับแต่งตำแหน่ง/ขนาดสติ๊กเกอร์หน้าตา (วางใต้ช่อง API Key) */
     #sticker-adjust-panel {
-      position: absolute;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 25;
       display: none;
       flex-direction: column;
       gap: 6px;
-      background: rgba(15, 23, 42, 0.88);
-      border: 1px solid rgba(59, 130, 246, 0.6);
-      border-radius: 12px;
-      padding: 8px 10px;
-      backdrop-filter: blur(8px);
-      max-width: 94%;
-      width: 360px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      background: #1c2430;
+      border: 1px solid #3b82f6;
+      border-radius: 6px;
+      padding: 10px;
+      width: 100%;
     }
     .adjust-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: bold;
       color: #93c5fd;
+      margin-bottom: 2px;
     }
     .adjust-grid-row {
       display: grid;
@@ -317,7 +310,7 @@
       gap: 4px;
     }
     .adjust-btn {
-      padding: 6px 2px;
+      padding: 8px 2px;
       font-size: 11px;
       background: #1e293b;
       border: 1px solid #334155;
@@ -325,6 +318,7 @@
       color: #f1f5f9;
       font-weight: normal;
       text-align: center;
+      cursor: pointer;
     }
     .adjust-btn:hover:not(:disabled) {
       background: #334155;
@@ -478,14 +472,9 @@
         padding: 5px 9px;
         font-size: 11px;
       }
-      #sticker-adjust-panel {
-        bottom: 8px;
-        padding: 6px 8px;
-        width: 95%;
-      }
       .adjust-btn {
-        padding: 5px 2px;
-        font-size: 10px;
+        padding: 6px 2px;
+        font-size: 11px;
       }
       input[type="password"],
       input[type="text"],
@@ -516,11 +505,22 @@
     </div>
 
     <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
+  </div>
 
-    <!-- แผงปรับตำแหน่งและขยายสติ๊กเกอร์หน้าตา วางลอยอยู่ใต้โมเดลบน Canvas โดยตรง -->
+  <div id="sidebar">
+    <h1>Agent 3D Builder</h1>
+    
+    <label for="api-key-input">Gemini API Key:</label>
+    <input 
+      type="password" 
+      id="api-key-input" 
+      data-testid="api-key-input" 
+      placeholder="ใส่ Gemini API Key ที่นี่" />
+
+    <!-- แผงปรับตำแหน่งและขยายสติ๊กเกอร์หน้าตา ย้ายมาวางใต้ช่อง API Key -->
     <div id="sticker-adjust-panel">
       <div class="adjust-header">
-        <span>🎮 ปรับสติ๊กเกอร์หน้าตา (มองเห็นได้ทันที)</span>
+        <span>🎮 ปรับสติ๊กเกอร์หน้าตา (มองเห็นโมเดลได้ชัดเจน)</span>
       </div>
       <div class="adjust-grid-row">
         <button id="stk-up-btn" class="adjust-btn" type="button">⬆️ ขึ้น</button>
@@ -541,17 +541,6 @@
         <button id="stk-stretch-y-minus" class="adjust-btn" type="button">🤏 สั้น</button>
       </div>
     </div>
-  </div>
-
-  <div id="sidebar">
-    <h1>Agent 3D Builder</h1>
-    
-    <label for="api-key-input">Gemini API Key:</label>
-    <input 
-      type="password" 
-      id="api-key-input" 
-      data-testid="api-key-input" 
-      placeholder="ใส่ Gemini API Key ที่นี่" />
 
     <!-- Multi-View Image Reference -->
     <label for="image-input-front">1. ภาพมุมหน้า (Front View Reference):</label>
@@ -974,7 +963,7 @@
     const stickerRemoveBtn = document.getElementById('sticker-remove-btn');
     const stickerButtons = [stickerHappyBtn, stickerShockBtn, stickerAngryBtn, stickerCuteBtn, stickerRemoveBtn];
 
-    // Sticker Transform Adjustment Elements (On-Canvas)
+    // Sticker Transform Adjustment Elements (In Sidebar under API Key)
     const stickerAdjustPanel = document.getElementById('sticker-adjust-panel');
     const stkUpBtn = document.getElementById('stk-up-btn');
     const stkDownBtn = document.getElementById('stk-down-btn');
@@ -1486,9 +1475,9 @@
       stickerMesh.position.set(center.x, center.y + size.y * 0.35, box.max.z + 0.03);
       modelGroup.add(stickerMesh);
 
-      // แสดงแผงปรับแต่งตำแหน่งและสัดส่วนบน Canvas Viewport
+      // แสดงแผงปรับแต่งตำแหน่งและสัดส่วนใน Sidebar (ใต้ช่อง API Key)
       stickerAdjustPanel.style.display = 'flex';
-      setStatus('ready', `แปะสติกเกอร์หน้าตาแล้ว! แตะปุ่มปรับใต้โมเดลเพื่อเลื่อน ขยาย หรือยืดสัดส่วนได้ทันที`);
+      setStatus('ready', `แปะสติกเกอร์หน้าตาแล้ว! ปรับเลื่อนหรือย่อขยายที่แผงใต้ช่อง API Key ได้ทันที`);
       updatePreviewSnapshot();
     }
 
