@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agent-3d-builder-v17';
+const CACHE_NAME = 'agent-3d-builder-v18';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -156,6 +156,23 @@
       position: relative;
       min-height: 250px;
       background-color: #111111;
+      overflow: hidden;
+    }
+    #canvas-container canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+    }
+    #camera-feed {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+      z-index: 1;
     }
     #preview-container,
     #uploaded-preview-container-front,
@@ -347,6 +364,39 @@
       background: #3a3a3a;
     }
 
+    /* แถบควบคุมกล้องถ่ายภาพ AR */
+    #camera-control-bar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+      display: flex;
+      gap: 8px;
+    }
+    #camera-toggle-btn,
+    #camera-snap-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid #555;
+      color: #fff;
+      backdrop-filter: blur(4px);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #camera-toggle-btn.active-camera {
+      background: rgba(220, 38, 38, 0.85);
+      border-color: #ef4444;
+    }
+    #camera-snap-btn {
+      background: rgba(16, 185, 129, 0.85);
+      border-color: #10b981;
+    }
+    #camera-snap-btn:hover {
+      background: rgba(5, 150, 105, 0.95);
+    }
+
     /* ปุ่มสลับโหมดสัมผัส 3D */
     #touch-toggle-btn {
       position: absolute;
@@ -393,6 +443,22 @@
         padding: 16px;
         padding-bottom: 40px;
       }
+      #camera-control-bar {
+        top: 8px;
+        left: 8px;
+        gap: 4px;
+      }
+      #camera-toggle-btn,
+      #camera-snap-btn {
+        padding: 5px 9px;
+        font-size: 11px;
+      }
+      #touch-toggle-btn {
+        top: 8px;
+        right: 8px;
+        padding: 5px 9px;
+        font-size: 11px;
+      }
       #gizmo-toolbar {
         bottom: 8px;
         padding: 4px;
@@ -423,6 +489,13 @@
 <body>
 
   <div id="canvas-container">
+    <video id="camera-feed" autoplay playsinline muted></video>
+
+    <div id="camera-control-bar">
+      <button id="camera-toggle-btn" type="button">📷 โหมดกล้องจริง</button>
+      <button id="camera-snap-btn" type="button" style="display: none;">📸 ถ่ายรูป AR</button>
+    </div>
+
     <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
     
     <div id="gizmo-toolbar">
@@ -562,7 +635,7 @@
       });
     }
 
-    // 2. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer สำหรับบันทึกภาพ
+    // 2. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer และ alpha สำหรับพื้นหลังโปร่งใส
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -570,7 +643,7 @@
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
     camera.position.set(5, 5, 7);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
@@ -695,6 +768,7 @@
 
       previewImg.src = dataUrl;
       downloadImgBtn.href = dataUrl;
+      downloadImgBtn.download = 'model-preview.png';
       previewContainer.style.display = 'flex';
     }
 
@@ -851,6 +925,13 @@
     const previewContainer = document.getElementById('preview-container');
     const historyBox = document.getElementById('history-box');
     const historyList = document.getElementById('history-list');
+
+    // Camera & AR Elements
+    const cameraFeed = document.getElementById('camera-feed');
+    const cameraToggleBtn = document.getElementById('camera-toggle-btn');
+    const cameraSnapBtn = document.getElementById('camera-snap-btn');
+    let isCameraMode = false;
+    let cameraStream = null;
 
     // Sticker Buttons
     const stickerHappyBtn = document.getElementById('sticker-happy-btn');
@@ -1067,6 +1148,122 @@
       } else {
         deselectPart();
       }
+    });
+
+    // ==========================================
+    // ระบบเปิดกล้องสภาพแวดล้อมจริง และถ่ายรูป AR
+    // ==========================================
+    async function startCamera() {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+        cameraFeed.srcObject = cameraStream;
+        await cameraFeed.play();
+        cameraFeed.style.display = 'block';
+
+        // ปรับพื้นหลัง 3D เป็นโปร่งใส และซ่อน Grid เพื่อผสานกับภาพกล้องจริง
+        scene.background = null;
+        renderer.setClearColor(0x000000, 0);
+        gridHelper.visible = false;
+
+        isCameraMode = true;
+        cameraToggleBtn.textContent = '❌ ปิดกล้องจริง';
+        cameraToggleBtn.classList.add('active-camera');
+        cameraSnapBtn.style.display = 'inline-block';
+        setStatus('ready', 'เปิดกล้องสภาพแวดล้อมจริงแล้ว! ปรับหมุนหรือย้ายตำแหน่งโมเดล แล้วกด "ถ่ายรูป AR" ได้ทันที');
+      } catch (err) {
+        setStatus('error', 'ไม่สามารถเปิดกล้องได้: ' + err.message);
+      }
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      cameraFeed.srcObject = null;
+      cameraFeed.style.display = 'none';
+
+      // คืนค่าพื้นหลังฉากสตูดิโอ 3D สีเข้ม
+      scene.background = new THREE.Color(0x1a1a1a);
+      renderer.setClearColor(0x1a1a1a, 1);
+      gridHelper.visible = true;
+
+      isCameraMode = false;
+      cameraToggleBtn.textContent = '📷 โหมดกล้องจริง';
+      cameraToggleBtn.classList.remove('active-camera');
+      cameraSnapBtn.style.display = 'none';
+      setStatus('idle', 'ปิดโหมดกล้องจริงแล้ว');
+    }
+
+    cameraToggleBtn.addEventListener('click', () => {
+      if (!isCameraMode) {
+        startCamera();
+      } else {
+        stopCamera();
+      }
+    });
+
+    cameraSnapBtn.addEventListener('click', () => {
+      if (!cameraFeed || !cameraFeed.videoWidth) {
+        setStatus('error', 'ภาพกล้องยังไม่พร้อมสำหรับการถ่ายรูป');
+        return;
+      }
+
+      deselectPart();
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      const captureCanvas = document.createElement('canvas');
+      captureCanvas.width = width;
+      captureCanvas.height = height;
+      const ctx = captureCanvas.getContext('2d');
+
+      // คำนวณตัดสัดส่วนวิดีโอ (Aspect Ratio Cover) ให้พอดีกับหน้าจอ
+      const vWidth = cameraFeed.videoWidth;
+      const vHeight = cameraFeed.videoHeight;
+      const videoAspect = vWidth / vHeight;
+      const containerAspect = width / height;
+
+      let sx = 0, sy = 0, sWidth = vWidth, sHeight = vHeight;
+      if (videoAspect > containerAspect) {
+        sHeight = vHeight;
+        sWidth = vHeight * containerAspect;
+        sx = (vWidth - sWidth) / 2;
+        sy = 0;
+      } else {
+        sWidth = vWidth;
+        sHeight = vWidth / containerAspect;
+        sx = 0;
+        sy = (vHeight - sHeight) / 2;
+      }
+
+      // 1. วาดเฟรมกล้องสดลงบนเลเยอร์พื้นหลัง
+      ctx.drawImage(cameraFeed, sx, sy, sWidth, sHeight, 0, 0, width, height);
+
+      // 2. เรนเดอร์ Three.js 3D ล่าสุดและวาดทับด้านบน
+      renderer.render(scene, camera);
+      ctx.drawImage(renderer.domElement, 0, 0, width, height);
+
+      // 3. ส่งออกภาพถ่ายรวม (.png)
+      const dataUrl = captureCanvas.toDataURL('image/png');
+      const previewImg = document.getElementById('preview-image');
+      const downloadImgBtn = document.getElementById('download-image-btn');
+
+      previewImg.src = dataUrl;
+      downloadImgBtn.href = dataUrl;
+      downloadImgBtn.download = 'ar-camera-photo.png';
+      previewContainer.style.display = 'flex';
+      previewContainer.scrollIntoView({ behavior: 'smooth' });
+
+      setStatus('ready', 'ถ่ายรูป AR รวมโมเดล 3D กับสภาพแวดล้อมจริงเรียบร้อย! ดาวน์โหลดภาพได้ที่เมนูด้านล่าง');
     });
 
     // ==========================================
