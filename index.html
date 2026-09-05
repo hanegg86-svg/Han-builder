@@ -589,10 +589,19 @@ You MUST output ONLY a valid JSON object matching this schema:
 
 Guidelines for high fidelity:
 - When a 2D image is provided, analyze its silhouette, contours, symmetrical parts, and colors carefully.
+- FACIAL & CHARACTER DETAILS (CRITICAL):
+  * When generating a human, character, animal, or mascot, you MUST generate dedicated micro-primitives for facial features.
+  * Eyes: Always generate left and right eyes. Use flattened spheres or disks (scale: [1, 1, 0.1]) with whites (#FFFFFF), and black/brown pupils layered slightly in front (+Z offset) so they do not clip or z-fight.
+  * Eyebrows: Use thin boxes or capsules tilted above each eye to match the expression.
+  * Mouth / Smile: Use a curved arc or thin flattened torus / small capsule with a smile color (#4a2c2c or #ffffff).
+  * Nose: Add a small subtle sphere or capsule in the center of the face.
+  * Cheeks / Blush: Add soft pink/red flattened spheres on both sides below the eyes.
+  * Ears: Add symmetrical spheres or capsules on the left and right sides of the head.
+  * Hair: Build hair with multiple clustered shapes (front bangs, side tufts, top volume) using capsules, boxes, or spheres rather than a single bald sphere.
 - For rotational symmetric items (vases, cups, wine glasses, bottles, chess pieces, bowls), use "lathe". Points define the 2D cross-section curve in XY plane where x >= 0 is radius and y is height.
 - For 2D profile shapes with depth (stars, blades, shields, letters, logos), use "extrude".
 - For limbs, organic links, joints, capsules, or rounded rods, use "capsule".
-- Use non-uniform "scale" (e.g. [1, 0.2, 1] on sphere for a disc/patty) to shape objects accurately.
+- Use non-uniform "scale" (e.g. [1, 0.2, 1] on sphere for a disc/patty or facial decals) to shape objects accurately.
 - Ensure objects rest naturally relative to ground level (Y = 0) or stack logically.
 `;
 
@@ -628,7 +637,7 @@ Guidelines for high fidelity:
         });
       }
 
-      const userText = prompt || 'วิเคราะห์รูปภาพนี้แล้วสร้างเป็นโมเดล 3D ตามโครงสร้างที่กำหนด';
+      const userText = prompt || 'วิเคราะห์รูปภาพนี้แล้วสร้างเป็นโมเดล 3D โดยจำลองรายละเอียดใบหน้าและสัดส่วนตัวละครให้ครบถ้วนตามโครงสร้างที่กำหนด';
       parts.push({ text: userText });
 
       try {
