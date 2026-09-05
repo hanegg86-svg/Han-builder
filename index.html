@@ -95,6 +95,12 @@
     #undo-btn:hover:not(:disabled) {
       background: #4b5563;
     }
+    #reset-btn {
+      background: #dc2626;
+    }
+    #reset-btn:hover:not(:disabled) {
+      background: #b91c1c;
+    }
     #export-glb-btn {
       background: #28a745;
     }
@@ -178,6 +184,34 @@
     }
     #remove-image-btn:hover {
       background: #b91c1c;
+    }
+
+    #history-box {
+      background: #181818;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 130px;
+      overflow-y: auto;
+    }
+    #history-box-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #00d2ff;
+      margin-bottom: 2px;
+    }
+    #history-list {
+      list-style-type: decimal;
+      padding-left: 18px;
+      color: #bbbbbb;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      word-break: break-word;
     }
 
     /* ปุ่มสลับโหมดสัมผัส 3D */
@@ -272,14 +306,20 @@
       <button id="remove-image-btn" type="button">❌ ลบรูปภาพที่เลือก</button>
     </div>
 
-    <label for="prompt-input">คำอธิบายโมเดล 3D (หรือรายละเอียดเพิ่มเติม):</label>
+    <label for="prompt-input">คำอธิบายโมเดล 3D (หรือคำสั่งปรับปรุงต่อยอด):</label>
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: หมุดปักกระดาษ Pin BFDI หรือ มาริโอ้วิ่ง หรือ รายละเอียดเพิ่มเติม"></textarea>
+      placeholder="ตัวอย่าง: สร้างหุ่นยนต์สีเงิน หรือ สั่งต่อยอด: เพิ่มหมวกคาวบอยสีน้ำตาล, เปลี่ยนสีตัวเป็นสีแดง"></textarea>
+
+    <div id="history-box">
+      <div id="history-box-title">ลำดับการปรับปรุงคำสั่งสะสม (Iterative History):</div>
+      <ol id="history-list"></ol>
+    </div>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="undo-btn" data-testid="undo-btn" disabled>↩️ ย้อนกลับทรงก่อนหน้า</button>
+    <button id="reset-btn" data-testid="reset-btn">🧹 ล้างคำสั่ง / เริ่มโมเดลใหม่</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
     
     <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle</div>
@@ -560,7 +600,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 5. จัดการ Element และการเชื่อมต่อ Gemini API
+    // 5. จัดการ Element, สถานะสะสม และการเชื่อมต่อ Gemini API
     const apiKeyInput = document.getElementById('api-key-input');
     const imageInput = document.getElementById('image-input');
     const uploadedPreviewContainer = document.getElementById('uploaded-preview-container');
@@ -569,12 +609,33 @@
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
     const undoBtn = document.getElementById('undo-btn');
+    const resetBtn = document.getElementById('reset-btn');
     const exportBtn = document.getElementById('export-glb-btn');
     const appStatus = document.getElementById('app-status');
     const downloadLink = document.getElementById('download-link');
     const previewContainer = document.getElementById('preview-container');
+    const historyBox = document.getElementById('history-box');
+    const historyList = document.getElementById('history-list');
 
+    let currentSpec = null;
+    let promptSession = [];
     const modelHistory = [];
+
+    function updateHistoryUI() {
+      historyList.innerHTML = '';
+      if (promptSession.length === 0) {
+        historyBox.style.display = 'none';
+        generateBtn.textContent = 'Generate 3D';
+      } else {
+        historyBox.style.display = 'flex';
+        promptSession.forEach((text, index) => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          historyList.appendChild(li);
+        });
+        generateBtn.textContent = 'Generate 3D (ต่อยอดจากเดิม)';
+      }
+    }
 
     function updateUndoButtonState() {
       undoBtn.disabled = modelHistory.length <= 1;
@@ -626,7 +687,7 @@
 
     const SYSTEM_PROMPT = `
 You are "PolyMorph 3D" — an elite Procedural 3D Geometry and Spatial Reconstruction Engine.
-Your mission is to transform user prompts OR 2D reference images into production-grade procedural 3D models using Three.js primitive and spline geometry schemas.
+Your mission is to transform user prompts, 2D reference images, OR iterative modifications into production-grade procedural 3D models using Three.js primitive and spline geometry schemas.
 
 OUTPUT FORMAT REQUIREMENTS:
 - You MUST output ONLY a valid JSON object matching the schema below.
@@ -667,48 +728,47 @@ JSON SCHEMA:
 MODE 1: 2D IMAGE TO 3D CONVERSION (SPATIAL LIFTING)
 ==================================================
 When an image is provided, reconstruct it from 2D flat space into true 3D volume using the "Layered Depth & Bevel" technique:
-
 1. SILHOUETTE EXTRUSION WITH BEVEL:
    - Identify the main outline/body contour of the 2D character or object.
    - Use "extrude" with a multi-point 2D polygon shape (at least 8-24 points outlining the silhouette).
    - Set "depth" to create tactile volume (0.2 to 0.45).
-   - ALWAYS enable bevel: "bevelEnabled": true, "bevelThickness": 0.03 to 0.06, "bevelSize": 0.03 to 0.05. This eliminates paper-thin sharp edges and gives a soft, tactile 3D figurine look.
-
-2. Z-AXIS DEPTH STACKING (LAYER SEPARATION):
-   Do NOT place all details on the same flat surface (Z = 0):
-   - Background elements (cape, backpack, hair back): Z = -0.15 to -0.3
+   - ALWAYS enable bevel: "bevelEnabled": true, "bevelThickness": 0.03 to 0.06, "bevelSize": 0.03 to 0.05.
+2. Z-AXIS DEPTH STACKING:
+   - Background elements: Z = -0.15 to -0.3
    - Main Torso / Silhouette: Centered around Z = 0
-   - Facial features / Decals (eyes, mouth, nose, buttons): Anchor to the body/head with parent, placed slightly proud on the front surface (e.g., Z = +0.12 to +0.22) so they NEVER z-fight or clip inside.
-
+   - Facial features / Decals: Anchor to the body/head with parent, placed slightly proud on the front surface (Z = +0.12 to +0.22).
 3. 2D LINE STROKES & LIMBS TO 3D SPLINES ("tube"):
-   - Cartoon arms, legs, antennae, outlines, and facial lines must be converted into 3D smooth paths using "tube".
-   - Use 3 to 6 spatial points with slight forward/sideway curves to give gesture and life (radius: 0.025 to 0.045).
+   - Cartoon arms, legs, antennae, outlines, and facial lines must be converted into 3D smooth paths using "tube" (radius: 0.025 to 0.045).
 
 ==================================================
 MODE 2: 3D FROM SCRATCH (TEXT-TO-3D)
 ==================================================
-When only a text prompt is given:
-1. ANATOMY & STRUCTURE:
-   - Decompose into primary volumes (torso = capsule/box, head = sphere/box, joints = spheres, limbs = capsules/tubes).
-   - Center of mass centered at [0, Y, 0]. Feet/base resting firmly on the ground plane (lowest Y ≈ 0).
-2. ORGANIC SHAPES:
-   - For round/soft characters (Mario, Kirby, animals): Prioritize spheres, capsules, and tubes.
-   - For hard-surface/mechanical models (robots, vehicles, furniture): Prioritize beveled boxes, cylinders, and lathed spindles.
-3. COLOR & MATERIAL HARMONY:
-   - Match vibrant colors for cartoon/anime aesthetics.
-   - Metallic parts: metalness: 0.7 - 0.9, roughness: 0.2 - 0.35.
-   - Matte/Skin/Cloth: metalness: 0.0 - 0.1, roughness: 0.6 - 0.85.
+When starting a brand new model from text:
+1. ANATOMY & STRUCTURE: Decompose into primary volumes. Center of mass at [0, Y, 0]. Feet/base near Y ≈ 0.
+2. ORGANIC SHAPES: For round characters use spheres, capsules, and tubes. For mechanical/furniture use beveled boxes, cylinders, and lathe.
+3. MATERIALS: Vibrant cartoon colors, metalness 0.7-0.9 for metals, 0.0-0.1 for matte/skin/cloth.
+
+==================================================
+MODE 3: ITERATIVE REFINEMENT & MODIFICATION (DELTA UPDATE)
+==================================================
+When existing 3D model JSON is provided in the prompt alongside new user modifications:
+1. PRESERVE EXISTING WORK:
+   - Retain existing object IDs, hierarchy, and shapes unless explicitly requested to alter, recolor, reposition, or delete them.
+2. ADDING ACCESSORIES OR NEW PARTS:
+   - Create new unique IDs for added parts.
+   - Link new parts to existing parent structures using "parent" attribute (e.g. adding a hat -> parent: "head", adding a weapon -> parent: "hand_r").
+   - Position coordinates locally relative to the parent object.
+3. MODIFYING ATTRIBUTES:
+   - If user asks to change color, scale, or orientation of existing parts, locate those parts in the JSON and update only the targeted values.
+4. RETURN COMPLETE COMPOSITION:
+   - Always return the full, valid JSON containing ALL retained, updated, and newly added objects.
 
 ==================================================
 CRITICAL COMPOSITION RULES:
 ==================================================
-1. PARENT-CHILD ORDER:
-   - Always declare parent parts BEFORE children in the "objects" array.
-   - Example order: root_body -> head (parent: "root_body") -> hat (parent: "head") -> eye_l (parent: "head").
-2. SYMMETRY & OFFSETS:
-   - Ensure symmetrical features (ears, eyes, arms, legs) have matching absolute values for X (+X for right, -X for left).
-3. NO EMPTY MODELS:
-   - Produce a rich, detailed composition composed of 12 to 45 distinct parts for full visual fidelity.
+1. PARENT-CHILD ORDER: Always declare parent parts BEFORE children in the "objects" array.
+2. SYMMETRY & OFFSETS: Symmetrical features have matching absolute values for X (+X right, -X left).
+3. NO EMPTY MODELS: Rich composition composed of 12 to 45 distinct parts for full fidelity.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -720,14 +780,15 @@ CRITICAL COMPOSITION RULES:
         return;
       }
 
-      if (!prompt && !currentImageBase64) {
+      if (!prompt && !currentImageBase64 && !currentSpec) {
         setStatus('error', 'กรุณาระบุคำอธิบายโมเดล 3D หรืออัปโหลดรูปภาพ 2D');
         return;
       }
 
-      setStatus('generating', 'Connecting to Gemini API...');
+      setStatus('generating', currentSpec ? 'กำลังส่งคำสั่งปรับปรุงโมเดลเดิมไปยัง Gemini...' : 'Connecting to Gemini API...');
       generateBtn.disabled = true;
       undoBtn.disabled = true;
+      resetBtn.disabled = true;
       exportBtn.disabled = true;
       downloadLink.style.display = 'none';
       previewContainer.style.display = 'none';
@@ -745,11 +806,21 @@ CRITICAL COMPOSITION RULES:
       }
 
       let userText = '';
-      if (currentImageBase64) {
-        userText = `วิเคราะห์รูปภาพ 2D นี้อย่างละเอียด: ดึงโครงสร้างเส้นรอบรูป (Silhouette) ของตัวละครหรือวัตถุหลักออกมาเป็นทรง 3D หนาแบบมีขอบมน (Extrude with Bevel) แยกเลเยอร์ความลึกแกน Z ของชิ้นส่วนหน้าตา แขนขา และเครื่องประดับให้ลอยนูนขึ้นมามีมิติ แขนขาทำเป็นท่อโค้ง 3 มิติ (Tube Spline) เก็บสีสันและความเงาตามภาพต้นฉบับอย่างแม่นยำ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
+      let actionLabel = '';
+
+      if (currentSpec) {
+        actionLabel = prompt || 'ปรับปรุงรายละเอียดโมเดลเพิ่มเติม';
+        userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Please modify, add, recolor, or delete parts from the current model JSON according to the instructions. Maintain existing parts and parent-child links that were not asked to change. Output the full updated JSON.`;
       } else {
-        userText = prompt;
+        if (currentImageBase64) {
+          actionLabel = prompt ? `แปลงภาพ 2D + ${prompt}` : 'แปลงรูปภาพ 2D เป็น 3D Model';
+          userText = `วิเคราะห์รูปภาพ 2D นี้อย่างละเอียด: ดึงโครงสร้างเส้นรอบรูป (Silhouette) ของตัวละครหรือวัตถุหลักออกมาเป็นทรง 3D หนาแบบมีขอบมน (Extrude with Bevel) แยกเลเยอร์ความลึกแกน Z ของชิ้นส่วนหน้าตา แขนขา และเครื่องประดับให้ลอยนูนขึ้นมามีมิติ แขนขาทำเป็นท่อโค้ง 3 มิติ (Tube Spline) เก็บสีสันและความเงาตามภาพต้นฉบับอย่างแม่นยำ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติมจากผู้ใช้: ${prompt}` : ''}`;
+        } else {
+          actionLabel = prompt;
+          userText = prompt;
+        }
       }
+
       parts.push({ text: userText });
 
       try {
@@ -787,15 +858,24 @@ CRITICAL COMPOSITION RULES:
         const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
         const specData = JSON.parse(sanitizedText);
         
-        modelHistory.push(specData);
+        currentSpec = specData;
+        promptSession.push(actionLabel);
+        modelHistory.push({
+          spec: JSON.parse(JSON.stringify(specData)),
+          session: [...promptSession]
+        });
+
         renderModel(specData);
+        promptInput.value = '';
         
-        setStatus('ready', 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
+        setStatus('ready', promptSession.length > 1 ? `ปรับปรุงโมเดลเรียบร้อย (ขั้นตอนที่ ${promptSession.length})` : 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
         exportBtn.disabled = false;
       } catch (err) {
         setStatus('error', 'เกิดข้อผิดพลาด: ' + err.message);
       } finally {
         generateBtn.disabled = false;
+        resetBtn.disabled = false;
+        updateHistoryUI();
         updateUndoButtonState();
       }
     });
@@ -803,13 +883,46 @@ CRITICAL COMPOSITION RULES:
     undoBtn.addEventListener('click', () => {
       if (modelHistory.length > 1) {
         modelHistory.pop();
-        const previousSpec = modelHistory[modelHistory.length - 1];
-        renderModel(previousSpec);
+        const prevState = modelHistory[modelHistory.length - 1];
+        currentSpec = JSON.parse(JSON.stringify(prevState.spec));
+        promptSession = [...prevState.session];
+        
+        renderModel(currentSpec);
         downloadLink.style.display = 'none';
-        setStatus('ready', 'ย้อนกลับไปยังทรงก่อนหน้าเรียบร้อย');
+        setStatus('ready', `ย้อนกลับไปยังทรงก่อนหน้าเรียบร้อย (ขั้นตอนที่ ${promptSession.length})`);
         exportBtn.disabled = false;
+        
+        updateHistoryUI();
         updateUndoButtonState();
       }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      currentSpec = null;
+      promptSession = [];
+      modelHistory.length = 0;
+
+      promptInput.value = '';
+      imageInput.value = '';
+      currentImageBase64 = null;
+      currentImageMimeType = null;
+      uploadedPreviewContainer.style.display = 'none';
+      uploadedImagePreview.src = '';
+
+      previewContainer.style.display = 'none';
+      downloadLink.style.display = 'none';
+      exportBtn.disabled = true;
+
+      while (modelGroup.children.length > 0) {
+        const obj = modelGroup.children[0];
+        disposeObject(obj);
+        modelGroup.remove(obj);
+      }
+      renderer.render(scene, camera);
+
+      updateHistoryUI();
+      updateUndoButtonState();
+      setStatus('idle', 'ล้างข้อมูลโมเดลและคำสั่งเรียบร้อย เริ่มต้นใหม่ได้ทันที');
     });
 
     exportBtn.addEventListener('click', () => {
