@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent 3D Builder Studio</title>
+  <title>Agent 3D Studio v14</title>
 
   <!-- PWA & Mobile Web App Settings -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1a1a1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="3D Builder">
+  <meta name="apple-mobile-web-app-title" content="3D Studio">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
@@ -42,11 +42,18 @@
       overflow-y: auto;
     }
     h1 {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       color: #00d2ff;
       display: flex;
       align-items: center;
       justify-content: space-between;
+    }
+    .version-badge {
+      font-size: 11px;
+      background: #0084ff;
+      color: #fff;
+      padding: 2px 7px;
+      border-radius: 10px;
     }
     label {
       font-size: 13px;
@@ -320,7 +327,10 @@
   </div>
 
   <div id="sidebar">
-    <h1>Agent 3D Studio</h1>
+    <h1>
+      Agent 3D Studio
+      <span class="version-badge">v14</span>
+    </h1>
     
     <label for="api-key-input">Gemini API Key:</label>
     <input 
@@ -351,7 +361,7 @@
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
     
-    <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle</div>
+    <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle (v14 Loaded)</div>
 
     <label>โครงสร้างชิ้นส่วนโมเดล (Scene Outliner):</label>
     <div id="outliner-panel">
@@ -377,11 +387,14 @@
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
     import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-    // 1. ลงทะเบียน Service Worker สำหรับ PWA
+    // 1. ลงทะเบียน Service Worker สำหรับ PWA พร้อมบังคับอัปเดตเวอร์ชัน v14
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then((reg) => console.log('SW registered:', reg.scope))
+          .then((reg) => {
+            reg.update();
+            console.log('SW v14 registered:', reg.scope);
+          })
           .catch((err) => console.error('SW failed:', err));
       });
     }
@@ -579,7 +592,7 @@
       controls.update();
     }
 
-    // 6. ฟังก์ชันสร้างโมเดล 3D แบบ Chunky Vinyl Figure พร้อม Bevel และขอบ Inverted Hull
+    // 6. ฟังก์ชันสร้างโมเดล 3D ที่บังคับความหนาและขอบมนระดับ Engine
     function renderModel(spec) {
       transformControls.detach();
       selectedMesh = null;
@@ -629,16 +642,20 @@
           for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1]);
           shape.closePath();
 
-          // ปรับความหนาเริ่มต้นเป็น 0.6 พร้อมเปิดขอบโค้งมน (Rounded Bevel) สไตล์ของเล่นไวนิล
+          // บังคับความหนาระดับ Engine: ถ้าความหนาน้อยกว่า 0.65 ระบบจะปรับเป็น 0.7 พร้อมเปิดขอบมน Bevel เพื่อให้เป็นฟิกเกอร์ตัวหนา
+          const rawDepth = p.depth !== undefined ? Number(p.depth) : 0.7;
+          const enforcedDepth = rawDepth < 0.45 ? 0.75 : rawDepth;
+
           const extrudeSettings = {
-            depth: p.depth !== undefined ? p.depth : 0.6,
-            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
+            depth: enforcedDepth,
+            bevelEnabled: true,
             bevelSegments: p.bevelSegments !== undefined ? p.bevelSegments : 3,
             steps: 1,
-            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.05,
-            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.06
+            bevelSize: p.bevelSize !== undefined ? Math.max(0.04, Number(p.bevelSize)) : 0.06,
+            bevelThickness: p.bevelThickness !== undefined ? Math.max(0.05, Number(p.bevelThickness)) : 0.08
           };
           geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+          geometry.center(); // จัดแกนกลางให้อยู่ตรงกลางมวล ช่วยให้หมุนแล้วสมดุลรอบด้าน
         } else if (item.type === 'tube') {
           const raw = (p.path && Array.isArray(p.path) && p.path.length > 1)
             ? p.path.map(pt => new THREE.Vector3(...pt))
@@ -851,17 +868,17 @@ NEVER create paper-thin flat cutouts! Output ONLY a valid JSON object matching t
 STRICT CHUNKY 3D TOY MODELING RULES:
 1. SOLID CHUNKY DEPTH (NO PAPER-THIN PLATES):
    - When modeling 2D cartoon characters (e.g. Pin, Leafy from BFDI), turn them into thick 3D vinyl collectible figurines.
-   - Use "extrude" for the main body silhouette with substantial depth: depth: 0.5 to 0.75, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05. This gives the body a tactile, rounded 3D toy feel.
+   - Use "extrude" for the main body silhouette with substantial depth: depth: 0.7 to 0.85, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06. This gives the body a tactile, rounded 3D toy feel.
    - For Pin (pushpin):
-     * Body: Red hourglass/flared head shape via extrude with depth: 0.6 (position: [0, 0.4, 0]).
-     * Top Spike: Silver 3D metal tip with full 3D thickness (cone with radius: 0.22, height: 0.8, or extrude pyramid with depth: 0.6) placed at the top center.
+     * Body: Red hourglass/flared head shape via extrude with depth: 0.75 (position: [0, 0.4, 0]).
+     * Top Spike: Silver 3D metal tip with full 3D thickness (cone with radius: 0.25, height: 0.85, or extrude pyramid with depth: 0.75) placed at the top center.
 2. STICK LIMBS WITH CHUNKY TOY FEEL:
    - Arms and legs: Use cylinders or tubes with radius 0.035 to 0.05 (color: "#000000").
    - Legs emerge from the bottom underside (-Y) and have tiny rounded foot pads.
    - Arms emerge from the sides with natural bends.
 3. 2D FACIAL FEATURES ON 3D CHUNKY SURFACE:
-   - Eyes and mouth must be placed slightly forward on the front face (Z offset ~ depth + bevelThickness + 0.02) so they don't clip into the body.
-   - Use small black spheres/capsules (color: "#000000") for eyes and mouth.
+   - Eyes and mouth must be placed slightly forward on the front face (Z offset ~ 0.45 to 0.5) so they sit cleanly on the front surface of the chunky body without clipping.
+   - Use small black spheres or capsules (color: "#000000") for eyes and mouth.
 4. FOR 3D VOLUMETRIC CHARACTERS (Mario, Yoshi):
    - Build complete head, snout, body, shoes, and props with 35 to 65 primitives as previously described.
 `;
@@ -928,7 +945,7 @@ STRICT CHUNKY 3D TOY MODELING RULES:
         const specData = JSON.parse(rawText);
         renderModel(specData);
         
-        setStatus('ready', 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
+        setStatus('ready', 'สร้างโมเดล 3D สำเร็จเรียบร้อย (v14)');
         exportBtn.disabled = false;
       } catch (err) {
         setStatus('error', 'เกิดข้อผิดพลาด: ' + err.message);
