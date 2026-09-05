@@ -295,7 +295,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
-    // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
+    // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)[span_0](start_span)[span_0](end_span)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
@@ -308,7 +308,7 @@
       });
     }
 
-    // 2. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer สำหรับบันทึกภาพ
+    // 2. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer สำหรับบันทึกภาพ[span_1](start_span)[span_1](end_span)
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -383,7 +383,6 @@
     }
     animate();
 
-    // ฟังก์ชันจัดการล้างหน่วยความจำแบบ Recursive เพื่อรองรับ Hierarchy
     function disposeObject(obj) {
       if (obj.children) {
         while (obj.children.length > 0) {
@@ -401,7 +400,7 @@
       }
     }
 
-    // 3. ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ
+    // 3. ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ[span_2](start_span)[span_2](end_span)
     function fitCameraToObject(object) {
       const box = new THREE.Box3().setFromObject(object);
       if (box.isEmpty()) return;
@@ -531,7 +530,6 @@
           const itemId = item.id || `obj_${index}`;
           objectMap.set(itemId, mesh);
 
-          // รองรับระบบลำดับชั้น Parent-Child
           if (item.parent && objectMap.has(item.parent)) {
             objectMap.get(item.parent).add(mesh);
           } else {
@@ -553,7 +551,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 5. จัดการ Element และการเชื่อมต่อ Gemini API
+    // 5. จัดการ Element และการเชื่อมต่อ Gemini API[span_3](start_span)[span_3](end_span)
     const apiKeyInput = document.getElementById('api-key-input');
     const imageInput = document.getElementById('image-input');
     const uploadedPreviewContainer = document.getElementById('uploaded-preview-container');
@@ -610,33 +608,30 @@
       appStatus.textContent = `Status: ${message}`;
     }
 
+    // Prompt ฉบับปรับปรุงใหม่: เน้นความแม่นยำ แยกประเภท 2D Cutout vs 3D Solid ชัดเจน ปราศจาก Prompt Bloat
     const SYSTEM_PROMPT = `
-You are an advanced procedural 3D modeling engine with support for Parent-Child Hierarchy and Spline Curves.
-Faithfully convert the user's reference image or natural language prompt into a structured 3D layout.
-
-You MUST output ONLY a valid JSON object matching this schema:
+You are a precise 3D procedural modeling engine. Analyze the reference image or prompt and output ONLY a valid JSON object matching this schema:
 {
   "objects": [
     {
-      "id": "unique_string_id", // e.g. "body", "head", "arm_left", "eye_right"
-      "parent": "parent_id_or_null", // OPTIONAL: if specified, position and rotation are relative to this parent object!
-      "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
+      "id": "unique_id",
+      "parent": "parent_id_or_null",
+      "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane",
       "parameters": {
-        // for box: "width": float, "height": float, "depth": float
-        // for cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
-        // for sphere: "radius": float, "widthSegments": int, "heightSegments": int
-        // for cone: "radius": float, "height": float, "radialSegments": int
-        // for torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
-        // for capsule: "radius": float, "length": float
-        // for lathe: "points": [[x, y], ...], "segments": int
-        // for extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool, "bevelThickness": float, "bevelSize": float
-        // for tube: "path": [[x, y, z], [x, y, z], ...], "radius": float, "tubularSegments": int (smooth 3D curved spline!)
-        // for plane: "width": float, "height": float
-        // for dodecahedron / icosahedron: "radius": float
+        // box: "width": float, "height": float, "depth": float
+        // cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
+        // sphere: "radius": float, "widthSegments": int, "heightSegments": int
+        // cone: "radius": float, "height": float, "radialSegments": int
+        // torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
+        // capsule: "radius": float, "length": float
+        // lathe: "points": [[x, y], ...], "segments": int
+        // extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool
+        // tube: "path": [[x, y, z], ...], "radius": float, "tubularSegments": int
+        // plane: "width": float, "height": float
       },
-      "position": [x, y, z], // local position relative to parent (or world if no parent)
-      "rotation": [rotX_radians, rotY_radians, rotZ_radians],
-      "scale": [scaleX, scaleY, scaleZ], // optional, default [1, 1, 1]
+      "position": [x, y, z],
+      "rotation": [rotX, rotY, rotZ],
+      "scale": [scaleX, scaleY, scaleZ],
       "color": "#hexcode",
       "metalness": float_0_to_1,
       "roughness": float_0_to_1
@@ -644,27 +639,22 @@ You MUST output ONLY a valid JSON object matching this schema:
   ]
 }
 
-ADVANCED MODELING & HIERARCHY GUIDELINES:
-1. PARENT-CHILD LINKING:
-   - Always declare parent parts before children (e.g. root "body" first, then "head" with parent="body", then facial features with parent="head").
-   - When eyes, pupils, eyebrows, smile lines, noses, or hats have parent="head", their position is relative to head origin, preventing clipping and keeping them perfectly anchored.
+STRICT VISUAL STYLE DECISION RULES:
 
-2. CURVED SPLINES ("tube"):
-   - For cartoon stick limbs (arms, legs), curved tails, eyebrows, smile strokes, or handles, use "tube" with a 3 to 5 point spline path:
-     e.g. arm hanging and bending forward: path: [[0, 0, 0], [-0.1, -0.2, 0.05], [-0.05, -0.4, 0.1]], radius: 0.025 to 0.04, color: #000000.
+CASE 1: FLAT 2D CARTOON / VECTOR CUTOUT (e.g. BFDI characters like Pin the pushpin, Leafy the leaf, Coiny):
+- The body is a flat 2D silhouette cutout. NEVER use "cylinder" or "cone" for the main body!
+- BODY: Use "extrude" to trace the exact 2D perimeter shape (with thin depth: 0.15 - 0.25).
+  * Example: Pin has a flat triangular silver metal point at top, connected to a red flared hourglass body (wide top, narrow waist, wide bottom). Both MUST be "extrude" shapes with depth: 0.2!
+- LIMBS: Arms and legs are simple stick figures. Use thin vertical/angled cylinders or tubes (radius: 0.025 to 0.035, color: "#000000").
+- FACE: Eyes and mouth are flat 2D strokes on the front face. Use small black spheres or flattened boxes (color: "#000000") placed on the front (+Z) surface of the body.
 
-3. 2D OBJECT SHOW CHARACTERS (e.g. Pin, Leafy, Coiny from BFDI):
-   - Never turn flat 2D cutouts into 3D lathe cylinders!
-   - Main Body: Use "extrude" with custom 2D polygon shape coordinates and thin depth (0.15 to 0.25).
-     * For Pin: top silver triangle via extrude; red hourglass body via extrude.
-   - Limbs: Thin black tubes (radius 0.025, color #000000) for arms and legs.
-   - Face: Black dots/tubes anchored to the body with parent="body" on the front face (Z ~ +0.12).
+CASE 2: 3D VOLUMETRIC CHARACTERS & FIGURES (e.g. Mario, Yoshi, animals):
+- Build full 3D body parts (head, snout, torso, limbs, shoes) with proper depth and overlapping joints.
 
-4. 3D ROUNDED CHARACTERS (Mario, Yoshi, Donkey Kong):
-   - Build anatomy: torso/body as root, head child, limbs child.
-   - Prominent features: protruding snout/muzzle, cap visor, mustache, crests, shell, boots.
-
-Center the main body at origin, keeping ground contact near Y = 0.
+GENERAL RULES:
+- Ignore any web browser UI, status bars, or search boxes present in the screenshot.
+- Sample exact colors from the image (e.g. crimson red for Pin, silver grey for metal tip, pitch black for stick limbs).
+- Center the character around origin (Y = 0 at feet).
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -699,7 +689,7 @@ Center the main body at origin, keeping ground contact near Y = 0.
         });
       }
 
-      const userText = prompt || 'วิเคราะห์เฉพาะวัตถุหรือตัวละครหลักตรงกลางภาพ ใช้ระบบลำดับชั้น parent-child และรูปทรง tube สำหรับเส้นโค้งแขนขาหรือหน้าตาตามสไตล์ต้นฉบับอย่างสมบูรณ์แบบ';
+      const userText = prompt || 'วิเคราะห์ตัวละครในรูปภาพอย่างซื่อตรง หากเป็นตัวการ์ตูนแบน 2D ให้ใช้ extrude ทำโครงร่างแบนบาง แขนขาเป็นเส้นขีดสีดำ และตาปากเป็นจุดสีดำตามภาพ';
       parts.push({ text: userText });
 
       try {
