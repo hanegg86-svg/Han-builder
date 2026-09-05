@@ -270,7 +270,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: ถ้วยกาแฟทรงกระบอก หรือ หากอัปโหลดรูป ให้ระบุรายละเอียดเพิ่มเติมที่ต้องการ"></textarea>
+      placeholder="ตัวอย่าง: ไดโนเสาร์การ์ตูนสีเขียวถือไข่ลายจุด หรือ รายละเอียดเพิ่มเติม"></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
@@ -560,7 +560,7 @@
     }
 
     const SYSTEM_PROMPT = `
-You are an advanced 3D procedural modeling engine. Convert the user's natural language request and/or 2D image into a precise 3D primitive layout.
+You are an expert procedural 3D modeler. Convert the user's natural language request and/or 2D image into an expressive, highly detailed 3D composition using 30 to 55 primitives.
 You MUST output ONLY a valid JSON object matching this schema:
 {
   "objects": [
@@ -587,22 +587,32 @@ You MUST output ONLY a valid JSON object matching this schema:
   ]
 }
 
-Guidelines for high fidelity:
-- When a 2D image is provided, analyze its silhouette, contours, symmetrical parts, and colors carefully.
-- FACIAL & CHARACTER DETAILS (CRITICAL):
-  * When generating a human, character, animal, or mascot, you MUST generate dedicated micro-primitives for facial features.
-  * Eyes: Always generate left and right eyes. Use flattened spheres or disks (scale: [1, 1, 0.1]) with whites (#FFFFFF), and black/brown pupils layered slightly in front (+Z offset) so they do not clip or z-fight.
-  * Eyebrows: Use thin boxes or capsules tilted above each eye to match the expression.
-  * Mouth / Smile: Use a curved arc or thin flattened torus / small capsule with a smile color (#4a2c2c or #ffffff).
-  * Nose: Add a small subtle sphere or capsule in the center of the face.
-  * Cheeks / Blush: Add soft pink/red flattened spheres on both sides below the eyes.
-  * Ears: Add symmetrical spheres or capsules on the left and right sides of the head.
-  * Hair: Build hair with multiple clustered shapes (front bangs, side tufts, top volume) using capsules, boxes, or spheres rather than a single bald sphere.
-- For rotational symmetric items (vases, cups, wine glasses, bottles, chess pieces, bowls), use "lathe". Points define the 2D cross-section curve in XY plane where x >= 0 is radius and y is height.
-- For 2D profile shapes with depth (stars, blades, shields, letters, logos), use "extrude".
-- For limbs, organic links, joints, capsules, or rounded rods, use "capsule".
-- Use non-uniform "scale" (e.g. [1, 0.2, 1] on sphere for a disc/patty or facial decals) to shape objects accurately.
-- Ensure objects rest naturally relative to ground level (Y = 0) or stack logically.
+CRITICAL RULES FOR HIGH FIDELITY REPRODUCTION:
+1. SNOUT & MUZZLE (Creatures/Dinosaurs/Animals):
+   - Characters like Yoshi have a large, forward-protruding rounded muzzle/snout. Do NOT place eyes on a flat surface!
+   - Build the head with multiple overlapping shapes:
+     * Upper head: sphere or capsule at the back/top.
+     * Big bulbous snout: large green sphere protruding forward in front of the eyes (positive Z).
+     * Lower jaw / cheeks / chin: white or cream-colored rounded shapes (spheres/cylinders) wrapping under and beside the snout.
+2. CARTOON EYES (Tall & Expressive):
+   - Place two large vertical cartoon eyes close together on top of the snout.
+   - Use elongated spheres (e.g. scale: [0.6, 1.2, 0.6]) for the white eye globes.
+   - Add black/colored pupils and small white highlight spots layered slightly forward (+Z) to create personality.
+3. SIGNATURE ACCESSORIES & BACK DETAILS:
+   - Always include distinctive rear features:
+     * Red/orange spine ridges / crests / spikes behind the head and neck.
+     * Shell / saddle: red rounded shape with white collar rim on the back (-Z).
+     * Tail: short pointed cone or capsule pointing backward (-Z).
+4. HELD PROPS & SURFACE PATTERNS (Eggs, Weapons, Items):
+   - If holding an egg (like Yoshi egg):
+     * Body of egg: white sphere elongated vertically (scale: [0.8, 1.1, 0.8]).
+     * Surface Spots: Place 4 to 6 thin, flat green discs/spheres (scale: [0.25, 0.25, 0.02]) directly onto the surface of the egg (front, left, right, top) tilted to align with the egg's curvature.
+   - Arms & Hands: Bendable arms using capsules, holding the prop from both sides with fingers/hands wrapping the object.
+5. SHOES & FEET:
+   - Create distinct stylized boots/shoes with a thick brown/orange sole (box or flat cylinder) and a bulbous colored shoe body.
+6. PRIMITIVE COUNT TARGET:
+   - Allocate 35 to 55 primitives to capture every layer: head, muzzle, cheeks, eyes, pupils, spikes, shell, torso, belly patch, arms, hands, prop, prop decals, legs, boots, and tail.
+   - Ensure all pieces connect tightly without unwanted floating gaps.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -637,7 +647,7 @@ Guidelines for high fidelity:
         });
       }
 
-      const userText = prompt || 'วิเคราะห์รูปภาพนี้แล้วสร้างเป็นโมเดล 3D โดยจำลองรายละเอียดใบหน้าและสัดส่วนตัวละครให้ครบถ้วนตามโครงสร้างที่กำหนด';
+      const userText = prompt || 'วิเคราะห์ภาพนี้และถอดแบบเป็นโมเดล 3D อย่างละเอียดครบทุกชิ้นส่วน ทั้งรูปทรงหัว จมูกยื่น ตาการ์ตูน แผ่นหลัง หาง พร็อพ และลวดลายจุด';
       parts.push({ text: userText });
 
       try {
