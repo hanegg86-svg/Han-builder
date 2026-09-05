@@ -270,7 +270,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: ตัวละครใบไม้สีเขียวมีแขนขาเส้น หรือ รายละเอียดเพิ่มเติม"></textarea>
+      placeholder="ตัวอย่าง: หมุดปักกระดาษ Pin BFDI หรือ มาริโอ้วิ่ง หรือ รายละเอียดเพิ่มเติม"></textarea>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
@@ -340,7 +340,6 @@
       }
     });
 
-    // ปรับระบบแสงแบบ Studio: มีแสงหลัก แสงขอบ และแสงส่องตรงจากด้านหน้า
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
@@ -384,6 +383,24 @@
     }
     animate();
 
+    // ฟังก์ชันจัดการล้างหน่วยความจำแบบ Recursive เพื่อรองรับ Hierarchy
+    function disposeObject(obj) {
+      if (obj.children) {
+        while (obj.children.length > 0) {
+          disposeObject(obj.children[0]);
+          obj.remove(obj.children[0]);
+        }
+      }
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach(m => m.dispose());
+        } else {
+          obj.material.dispose();
+        }
+      }
+    }
+
     // 3. ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ
     function fitCameraToObject(object) {
       const box = new THREE.Box3().setFromObject(object);
@@ -402,18 +419,19 @@
       controls.update();
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec ที่รองรับรูปทรงซับซ้อน
+    // 4. ฟังก์ชันสร้างโมเดล 3D จาก JSON Spec ที่รองรับ Hierarchy, Tube Curves และ Plane
     function renderModel(spec) {
       while (modelGroup.children.length > 0) {
         const obj = modelGroup.children[0];
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) obj.material.dispose();
+        disposeObject(obj);
         modelGroup.remove(obj);
       }
 
       if (!spec.objects || !Array.isArray(spec.objects)) return;
 
-      spec.objects.forEach(item => {
+      const objectMap = new Map();
+
+      spec.objects.forEach((item, index) => {
         let geometry;
         const p = item.parameters || {};
 
@@ -466,14 +484,28 @@
           shape.closePath();
 
           const extrudeSettings = {
-            depth: p.depth !== undefined ? p.depth : 0.5,
-            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
-            bevelSegments: p.bevelSegments || 2,
+            depth: p.depth !== undefined ? p.depth : 0.2,
+            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : false,
+            bevelSegments: p.bevelSegments || 1,
             steps: 1,
-            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.04,
-            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.04
+            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.02,
+            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.02
           };
           geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        } else if (item.type === 'tube') {
+          const rawPath = (p.path && Array.isArray(p.path) && p.path.length > 1)
+            ? p.path.map(pt => new THREE.Vector3(...pt))
+            : [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0)];
+          const curve = new THREE.CatmullRomCurve3(rawPath);
+          geometry = new THREE.TubeGeometry(
+            curve,
+            p.tubularSegments || 24,
+            p.radius || 0.035,
+            p.radialSegments || 8,
+            p.closed || false
+          );
+        } else if (item.type === 'plane') {
+          geometry = new THREE.PlaneGeometry(p.width || 1, p.height || 1);
         } else if (item.type === 'dodecahedron') {
           geometry = new THREE.DodecahedronGeometry(p.radius || 0.5, p.detail || 0);
         } else if (item.type === 'icosahedron') {
@@ -484,7 +516,8 @@
           const material = new THREE.MeshStandardMaterial({
             color: item.color || '#cccccc',
             metalness: item.metalness !== undefined ? item.metalness : 0.05,
-            roughness: item.roughness !== undefined ? item.roughness : 0.65
+            roughness: item.roughness !== undefined ? item.roughness : 0.65,
+            side: item.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide
           });
 
           const mesh = new THREE.Mesh(geometry, material);
@@ -494,7 +527,16 @@
           
           mesh.castShadow = true;
           mesh.receiveShadow = true;
-          modelGroup.add(mesh);
+
+          const itemId = item.id || `obj_${index}`;
+          objectMap.set(itemId, mesh);
+
+          // รองรับระบบลำดับชั้น Parent-Child
+          if (item.parent && objectMap.has(item.parent)) {
+            objectMap.get(item.parent).add(mesh);
+          } else {
+            modelGroup.add(mesh);
+          }
         }
       });
 
@@ -569,13 +611,16 @@
     }
 
     const SYSTEM_PROMPT = `
-You are a universal 3D procedural modeling engine. Your goal is to recreate EXACTLY what is shown in the user's reference image or text prompt into a set of 3D primitives.
+You are an advanced procedural 3D modeling engine with support for Parent-Child Hierarchy and Spline Curves.
+Faithfully convert the user's reference image or natural language prompt into a structured 3D layout.
 
 You MUST output ONLY a valid JSON object matching this schema:
 {
   "objects": [
     {
-      "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "dodecahedron" | "icosahedron",
+      "id": "unique_string_id", // e.g. "body", "head", "arm_left", "eye_right"
+      "parent": "parent_id_or_null", // OPTIONAL: if specified, position and rotation are relative to this parent object!
+      "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
       "parameters": {
         // for box: "width": float, "height": float, "depth": float
         // for cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
@@ -585,9 +630,11 @@ You MUST output ONLY a valid JSON object matching this schema:
         // for capsule: "radius": float, "length": float
         // for lathe: "points": [[x, y], ...], "segments": int
         // for extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool, "bevelThickness": float, "bevelSize": float
+        // for tube: "path": [[x, y, z], [x, y, z], ...], "radius": float, "tubularSegments": int (smooth 3D curved spline!)
+        // for plane: "width": float, "height": float
         // for dodecahedron / icosahedron: "radius": float
       },
-      "position": [x, y, z],
+      "position": [x, y, z], // local position relative to parent (or world if no parent)
       "rotation": [rotX_radians, rotY_radians, rotZ_radians],
       "scale": [scaleX, scaleY, scaleZ], // optional, default [1, 1, 1]
       "color": "#hexcode",
@@ -597,27 +644,27 @@ You MUST output ONLY a valid JSON object matching this schema:
   ]
 }
 
-VISUAL-FIRST DECONSTRUCTION RULES:
-1. FOCUS ON THE ACTUAL CENTRAL SUBJECT:
-   - If the image is a mobile screenshot with web browser UI, search bars, or text headers, IGNORE the surrounding interface completely. Focus ONLY on the central character or object.
-   - Do NOT assume any specific franchise, costume, or overalls unless it is genuinely visible on the subject!
+ADVANCED MODELING & HIERARCHY GUIDELINES:
+1. PARENT-CHILD LINKING:
+   - Always declare parent parts before children (e.g. root "body" first, then "head" with parent="body", then facial features with parent="head").
+   - When eyes, pupils, eyebrows, smile lines, noses, or hats have parent="head", their position is relative to head origin, preventing clipping and keeping them perfectly anchored.
 
-2. CLASSIFICATION & ADAPTIVE MODELING:
-   - CATEGORY A: LIVING OBJECTS / ANTHROPOMORPHIC SHAPES (e.g. Leafy from BFDI, living coins, teardrops, apples):
-     * Body: It is NOT a humanoid torso with clothes! Model the actual object shape using "extrude" with custom 2D polygon shape points (e.g. leaf outline with pointed tip at top and rounded lobes at bottom), or a flattened sphere/box with the exact color (e.g. vibrant lime green #48d83c).
-     * Facial Features: The face is 2D minimalist lines drawn on the object surface. Use thin black capsules/boxes or torus segments placed slightly on the front surface (+Z): simple black oval eyes, curved black smile line, black eyebrow strokes. Do NOT add a 3D bulbous human nose or mustache!
-     * Limbs: Thin black stick arms and legs (radius ~ 0.04 - 0.08) using thin cylinders or capsules (#111111) connecting directly to the main object.
-   - CATEGORY B: HUMANOIDS & PLUMBERS:
-     * Model the head, distinct cap, nose, mustache, and actual clothing (shirt + overalls/pants) ONLY when the character is genuinely a human or plumber wearing them.
-   - CATEGORY C: CREATURES & DINOSAURS:
-     * Model large snout, oval vertical eyes, tail, back shell, spines, and boots if the character is a creature/dinosaur.
-   - CATEGORY D: PROPS, ARCHITECTURE & DIORAMAS:
-     * Model roofs, bases, walls, chimneys, and ground plates.
+2. CURVED SPLINES ("tube"):
+   - For cartoon stick limbs (arms, legs), curved tails, eyebrows, smile strokes, or handles, use "tube" with a 3 to 5 point spline path:
+     e.g. arm hanging and bending forward: path: [[0, 0, 0], [-0.1, -0.2, 0.05], [-0.05, -0.4, 0.1]], radius: 0.025 to 0.04, color: #000000.
 
-3. COLOR AND PROPORTIONS:
-   - Sample the exact dominant colors from the image (e.g. Leafy: bright green body, black limbs and face lines).
-   - Use non-uniform scale to match proportions accurately.
-   - Keep metalness low (0.02 - 0.08) and roughness around 0.65 for clean cartoon styling.
+3. 2D OBJECT SHOW CHARACTERS (e.g. Pin, Leafy, Coiny from BFDI):
+   - Never turn flat 2D cutouts into 3D lathe cylinders!
+   - Main Body: Use "extrude" with custom 2D polygon shape coordinates and thin depth (0.15 to 0.25).
+     * For Pin: top silver triangle via extrude; red hourglass body via extrude.
+   - Limbs: Thin black tubes (radius 0.025, color #000000) for arms and legs.
+   - Face: Black dots/tubes anchored to the body with parent="body" on the front face (Z ~ +0.12).
+
+4. 3D ROUNDED CHARACTERS (Mario, Yoshi, Donkey Kong):
+   - Build anatomy: torso/body as root, head child, limbs child.
+   - Prominent features: protruding snout/muzzle, cap visor, mustache, crests, shell, boots.
+
+Center the main body at origin, keeping ground contact near Y = 0.
 `;
 
     generateBtn.addEventListener('click', async () => {
@@ -652,7 +699,7 @@ VISUAL-FIRST DECONSTRUCTION RULES:
         });
       }
 
-      const userText = prompt || 'วิเคราะห์เฉพาะวัตถุหรือตัวละครหลักที่ปรากฏตรงกลางภาพ (มองข้าม UI หรือข้อความรอบข้าง) แล้วถอดแบบโครงสร้าง รูปทรง สีสัน ใบหน้า และแขนขาออกมาเป็น 3D อย่างซื่อตรงตามที่เห็นจริงในภาพ';
+      const userText = prompt || 'วิเคราะห์เฉพาะวัตถุหรือตัวละครหลักตรงกลางภาพ ใช้ระบบลำดับชั้น parent-child และรูปทรง tube สำหรับเส้นโค้งแขนขาหรือหน้าตาตามสไตล์ต้นฉบับอย่างสมบูรณ์แบบ';
       parts.push({ text: userText });
 
       try {
