@@ -89,6 +89,12 @@
       background: #555555;
       cursor: not-allowed;
     }
+    #refine-details-btn {
+      background: #8b5cf6;
+    }
+    #refine-details-btn:hover:not(:disabled) {
+      background: #7c3aed;
+    }
     #snap-png-btn {
       background: #6366f1;
     }
@@ -489,7 +495,9 @@
     {
       "imports": {
         "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "three-mesh-bvh": "https://unpkg.com/three-mesh-bvh@0.7.3/build/index.module.js",
+        "three-bvh-csg": "https://unpkg.com/three-bvh-csg@0.0.16/build/index.module.js"
       }
     }
   </script>
@@ -627,6 +635,7 @@
     </div>
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
+    <button id="refine-details-btn" data-testid="refine-details-btn" disabled>✨ เจาะลึกดีเทลระดับ Micro (Stage 2 Pass)</button>
     <button id="snap-png-btn" data-testid="snap-png-btn" disabled>📸 เซฟรูปภาพโมเดล (PNG)</button>
     <button id="undo-btn" data-testid="undo-btn" disabled>↩️ ย้อนกลับทรงก่อนหน้า</button>
     <button id="reset-btn" data-testid="reset-btn">🧹 ล้างคำสั่ง / เริ่มโมเดลใหม่</button>
@@ -653,6 +662,15 @@
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
     import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+    // โหลด CSG Module แบบ Dynamic และ Safe Fallback
+    let csgLib = null;
+    try {
+      csgLib = await import('three-bvh-csg');
+      console.log('CSG Boolean Engine loaded successfully.');
+    } catch (err) {
+      console.warn('CSG library not loaded, falling back to standard hierarchy:', err);
+    }
 
     // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
     if ('serviceWorker' in navigator) {
@@ -684,7 +702,7 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
 
-    // สร้าง Environment Map จาก RoomEnvironment เพื่อให้วัตถุเกิดแสงสะท้อนสตูดิโอ 360 องศา
+    // Environment Map จาก RoomEnvironment
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
     const studioEnvTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -731,7 +749,7 @@
     const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
     scene.add(gridHelper);
 
-    // ระนาบรับเงานุ่มนวลที่พื้น (Contact Soft Shadow Plane)
+    // ระนาบรับเงา Contact Shadow Plane
     const shadowPlaneGeo = new THREE.PlaneGeometry(25, 25);
     const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.35 });
     const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
@@ -764,7 +782,7 @@
     }
     animate();
 
-    // ฟังก์ชันจัดการล้างหน่วยความจำแบบ Recursive เพื่อรองรับ Hierarchy
+    // ฟังก์ชันจัดการล้างหน่วยความจำแบบ Recursive
     function disposeObject(obj) {
       if (obj.children) {
         while (obj.children.length > 0) {
@@ -786,7 +804,7 @@
       }
     }
 
-    // 3. ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ
+    // ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ
     function fitCameraToObject(object) {
       const box = new THREE.Box3().setFromObject(object);
       if (box.isEmpty()) return;
@@ -818,7 +836,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ Ultra-Smooth Physical Shading & High-Fidelity Geometry
+    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อมรองรับ CSG Boolean
     function renderModel(spec) {
       deselectPart();
 
@@ -834,7 +852,9 @@
       if (!spec.objects || !Array.isArray(spec.objects)) return;
 
       const objectMap = new Map();
+      const booleanTasks = [];
 
+      // Step 1: สร้างรูปทรงเรขาคณิตพื้นฐานทั้งหมด
       spec.objects.forEach((item, index) => {
         let geometry;
         const p = item.parameters || {};
@@ -950,7 +970,10 @@
           mesh.userData = { id: itemId };
           objectMap.set(itemId, mesh);
 
-          // รองรับระบบลำดับชั้น Parent-Child
+          if (item.boolean && item.boolean.target && item.boolean.operation) {
+            booleanTasks.push({ item, mesh });
+          }
+
           if (item.parent && objectMap.has(item.parent)) {
             objectMap.get(item.parent).add(mesh);
           } else {
@@ -959,11 +982,61 @@
         }
       });
 
+      // Step 2: ประมวลผล CSG Boolean Operations (Subtract / Union / Intersect)
+      if (csgLib && booleanTasks.length > 0) {
+        const { Brush, Evaluator, SUBTRACTION, ADDITION, INTERSECTION } = csgLib;
+        const evaluator = new Evaluator();
+        evaluator.useGroups = false;
+
+        booleanTasks.forEach(({ item, mesh: toolMesh }) => {
+          const targetId = item.boolean.target;
+          const targetMesh = objectMap.get(targetId);
+          const opType = (item.boolean.operation || '').toLowerCase();
+
+          if (targetMesh && toolMesh) {
+            try {
+              targetMesh.updateMatrixWorld(true);
+              toolMesh.updateMatrixWorld(true);
+
+              const brushA = new Brush(targetMesh.geometry.clone(), targetMesh.material);
+              brushA.position.copy(targetMesh.position);
+              brushA.rotation.copy(targetMesh.rotation);
+              brushA.scale.copy(targetMesh.scale);
+              brushA.updateMatrixWorld(true);
+
+              const brushB = new Brush(toolMesh.geometry.clone(), toolMesh.material);
+              brushB.position.copy(toolMesh.position);
+              brushB.rotation.copy(toolMesh.rotation);
+              brushB.scale.copy(toolMesh.scale);
+              brushB.updateMatrixWorld(true);
+
+              let opConst = SUBTRACTION;
+              if (opType === 'union' || opType === 'add') opConst = ADDITION;
+              else if (opType === 'intersect') opConst = INTERSECTION;
+
+              const csgResult = evaluator.evaluate(brushA, brushB, opConst);
+              if (csgResult && csgResult.geometry) {
+                targetMesh.geometry.dispose();
+                targetMesh.geometry = csgResult.geometry;
+
+                // หากเป็น Subtract หรือ Intersect ให้ซ่อนเครื่องมือเจาะเพื่อโชว์รอยคว้าน
+                if (opType === 'subtract' || opType === 'intersect') {
+                  toolMesh.visible = false;
+                  toolMesh.userData.isCutter = true;
+                }
+              }
+            } catch (csgErr) {
+              console.warn(`CSG Boolean skipped for ${item.id}:`, csgErr);
+            }
+          }
+        });
+      }
+
       fitCameraToObject(modelGroup);
       updatePreviewSnapshot();
     }
 
-    // 5. จัดการ Element, สถานะสะสม และการเชื่อมต่อ Gemini API
+    // 5. จัดการ Element และการเชื่อมต่อ Gemini API
     const apiKeyInput = document.getElementById('api-key-input');
     
     // Front Image
@@ -980,6 +1053,7 @@
 
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
+    const refineDetailsBtn = document.getElementById('refine-details-btn');
     const snapPngBtn = document.getElementById('snap-png-btn');
     const undoBtn = document.getElementById('undo-btn');
     const resetBtn = document.getElementById('reset-btn');
@@ -1005,7 +1079,7 @@
     const stickerRemoveBtn = document.getElementById('sticker-remove-btn');
     const stickerButtons = [stickerHappyBtn, stickerShockBtn, stickerAngryBtn, stickerCuteBtn, stickerRemoveBtn];
 
-    // Sticker Transform Adjustment Elements (In Sidebar under API Key)
+    // Sticker Transform Adjustment Elements
     const stickerAdjustPanel = document.getElementById('sticker-adjust-panel');
     const stkUpBtn = document.getElementById('stk-up-btn');
     const stkDownBtn = document.getElementById('stk-down-btn');
@@ -1051,6 +1125,7 @@
 
     function updateActionButtonsState() {
       const hasModel = currentSpec !== null;
+      refineDetailsBtn.disabled = !hasModel;
       poseButtons.forEach(btn => btn.disabled = !hasModel);
       stickerButtons.forEach(btn => btn.disabled = !hasModel);
       snapPngBtn.disabled = !hasModel;
@@ -1207,9 +1282,7 @@
       }
     });
 
-    // ==========================================
     // ปุ่ม Snap ดาวน์โหลดรูปภาพ PNG ทันที
-    // ==========================================
     snapPngBtn.addEventListener('click', () => {
       if (!currentSpec) {
         setStatus('error', 'ไม่มีโมเดล 3D ให้บันทึกรูปภาพ');
@@ -1230,9 +1303,7 @@
       setStatus('ready', '📸 เซฟรูปภาพโมเดล 3D (PNG) ลงเครื่องเรียบร้อยแล้ว!');
     });
 
-    // ==========================================
     // ระบบเปิดกล้องสภาพแวดล้อมจริง และถ่ายรูป AR
-    // ==========================================
     async function startCamera() {
       try {
         cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -1247,7 +1318,6 @@
         await cameraFeed.play();
         cameraFeed.style.display = 'block';
 
-        // ปรับพื้นหลัง 3D เป็นโปร่งใส และซ่อน Grid/Shadow เพื่อผสานกับภาพกล้องจริง
         scene.background = null;
         renderer.setClearColor(0x000000, 0);
         gridHelper.visible = false;
@@ -1271,7 +1341,6 @@
       cameraFeed.srcObject = null;
       cameraFeed.style.display = 'none';
 
-      // คืนค่าพื้นหลังฉากสตูดิโอ 3D สีเข้ม
       scene.background = new THREE.Color(0x1a1a1a);
       renderer.setClearColor(0x1a1a1a, 1);
       gridHelper.visible = true;
@@ -1308,7 +1377,6 @@
       captureCanvas.height = height;
       const ctx = captureCanvas.getContext('2d');
 
-      // คำนวณตัดสัดส่วนวิดีโอ (Aspect Ratio Cover) ให้พอดีกับหน้าจอ
       const vWidth = cameraFeed.videoWidth;
       const vHeight = cameraFeed.videoHeight;
       const videoAspect = vWidth / vHeight;
@@ -1327,14 +1395,11 @@
         sy = (vHeight - sHeight) / 2;
       }
 
-      // 1. วาดเฟรมกล้องสดลงบนเลเยอร์พื้นหลัง
       ctx.drawImage(cameraFeed, sx, sy, sWidth, sHeight, 0, 0, width, height);
 
-      // 2. เรนเดอร์ Three.js 3D ล่าสุดและวาดทับด้านบน
       renderer.render(scene, camera);
       ctx.drawImage(renderer.domElement, 0, 0, width, height);
 
-      // 3. ส่งออกภาพถ่ายรวม (.png)
       const dataUrl = captureCanvas.toDataURL('image/png');
       const previewImg = document.getElementById('preview-image');
       const downloadImgBtn = document.getElementById('download-image-btn');
@@ -1345,7 +1410,6 @@
       previewContainer.style.display = 'flex';
       previewContainer.scrollIntoView({ behavior: 'smooth' });
 
-      // บันทึกลงเครื่องทันที
       const instantLink = document.createElement('a');
       instantLink.href = dataUrl;
       instantLink.download = `ar-camera-${Date.now()}.png`;
@@ -1356,9 +1420,7 @@
       setStatus('ready', 'ถ่ายรูป AR รวมโมเดล 3D กับสภาพแวดล้อมจริงเรียบร้อยแล้ว!');
     });
 
-    // ==========================================
-    // ระบบสติกเกอร์หน้าตาแนบผิว 2D Decal Canvas
-    // ==========================================
+    // สติกเกอร์หน้าตาแนบผิว 2D Decal Canvas
     function createFaceCanvas(type) {
       const c = document.createElement('canvas');
       c.width = 512;
@@ -1367,7 +1429,6 @@
       ctx.clearRect(0, 0, 512, 512);
 
       if (type === 'bfdi_happy') {
-        // ตาขีดรีสไตล์ BFDI
         ctx.fillStyle = '#000000';
         ctx.beginPath();
         ctx.ellipse(170, 190, 16, 28, 0, 0, Math.PI * 2);
@@ -1377,7 +1438,6 @@
         ctx.ellipse(342, 190, 16, 28, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // ปากยิ้มกว้างเห็นฟันขาวแบบ BFDI
         ctx.save();
         ctx.beginPath();
         ctx.arc(256, 250, 100, 0.15 * Math.PI, 0.85 * Math.PI, false);
@@ -1388,7 +1448,6 @@
         ctx.strokeStyle = '#000000';
         ctx.stroke();
 
-        // ฟันขาวด้านบน
         ctx.clip();
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(150, 250, 212, 35);
@@ -1398,21 +1457,18 @@
         ctx.restore();
 
       } else if (type === 'bfdi_shock') {
-        // ตาโตตกใจ
         ctx.fillStyle = '#000000';
         ctx.beginPath();
         ctx.arc(170, 180, 26, 0, Math.PI * 2);
         ctx.arc(342, 180, 26, 0, Math.PI * 2);
         ctx.fill();
 
-        // ปากอ้ากลมรูปตัว O
         ctx.beginPath();
         ctx.ellipse(256, 300, 48, 62, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#000000';
         ctx.fill();
 
       } else if (type === 'bfdi_angry') {
-        // คิ้วเฉียงโกรธ
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 12;
         ctx.lineCap = 'round';
@@ -1423,14 +1479,12 @@
         ctx.lineTo(302, 190);
         ctx.stroke();
 
-        // ลูกตาดำ
         ctx.fillStyle = '#000000';
         ctx.beginPath();
         ctx.ellipse(175, 210, 16, 24, 0, 0, Math.PI * 2);
         ctx.ellipse(337, 210, 16, 24, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // ปากกัดฟันโกรธ
         ctx.beginPath();
         ctx.roundRect(170, 290, 172, 45, 10);
         ctx.fillStyle = '#ffffff';
@@ -1451,14 +1505,12 @@
         ctx.stroke();
 
       } else if (type === 'cute') {
-        // ตากลมโตประกายอนิเมะ
         ctx.fillStyle = '#111827';
         ctx.beginPath();
         ctx.ellipse(170, 190, 36, 48, 0, 0, Math.PI * 2);
         ctx.ellipse(342, 190, 36, 48, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // แววตาสีขาว
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(160, 175, 14, 0, Math.PI * 2);
@@ -1467,14 +1519,12 @@
         ctx.arc(352, 205, 8, 0, Math.PI * 2);
         ctx.fill();
 
-        // แก้มชมพูระเรื่อ
         ctx.fillStyle = 'rgba(244, 114, 182, 0.55)';
         ctx.beginPath();
         ctx.ellipse(135, 240, 25, 14, 0, 0, Math.PI * 2);
         ctx.ellipse(377, 240, 25, 14, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // ปากยิ้มเล็กน่ารัก
         ctx.strokeStyle = '#111827';
         ctx.lineWidth = 8;
         ctx.lineCap = 'round';
@@ -1492,7 +1542,6 @@
         return;
       }
 
-      // ลบสติกเกอร์เดิมออกก่อน
       const existingSticker = modelGroup.getObjectByName('face_sticker');
       if (existingSticker) {
         disposeObject(existingSticker);
@@ -1506,7 +1555,6 @@
         return;
       }
 
-      // คำนวณ Bounding Box ของโมเดลเพื่อแนบสติกเกอร์ไว้ที่ผิวหน้าสุด
       const box = new THREE.Box3().setFromObject(modelGroup);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
@@ -1536,7 +1584,6 @@
       stickerMesh.name = 'face_sticker';
       stickerMesh.userData = { id: 'face_sticker' };
 
-      // ตั้งตำแหน่งเริ่มต้น: ขยับแกน Y ขึ้นไปด้านบนช่วงหัว
       stickerMesh.position.set(center.x, center.y + size.y * 0.35, box.max.z + 0.03);
       modelGroup.add(stickerMesh);
 
@@ -1545,7 +1592,6 @@
       updatePreviewSnapshot();
     }
 
-    // ฟังก์ชันจัดการขยับตำแหน่งและปรับสเกลของสติ๊กเกอร์หน้าตา
     function adjustSticker(action) {
       const sticker = modelGroup.getObjectByName('face_sticker');
       if (!sticker) return;
@@ -1611,7 +1657,7 @@
       localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
     });
 
-    // Handle Front View Image
+    // Front Image
     imageInputFront.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -1639,7 +1685,7 @@
       uploadedImagePreviewFront.src = '';
     });
 
-    // Handle Side View Image
+    // Side Image
     imageInputSide.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -1680,11 +1726,15 @@ STRICT DESIGN MANDATES:
 1. NEVER CREATE FLAT 2D CARDBOARD CUTOUTS OR FLAT PLAQUES:
    - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, roundedBox, volumetric compound forms, organic tapered lobes).
    - Depth (Z-axis) must be proportional to width (X-axis) and height (Y-axis), typically depth >= 0.75 * width!
-2. THREE-TIER SCULPTING HIERARCHY (35 to 75 distinct parts):
+2. MULTI-TIER SCULPTING HIERARCHY:
    - PRIMARY FORMS: Main body volume, head, hips, chest (using sphere, capsule, roundedBox).
    - SECONDARY FORMS: Eye sockets, outer rims, ears, limbs with natural joints, snout, footwear soles.
    - TERTIARY MICRO-DETAILS: Multi-layered eyes (Socket -> Sclera -> Iris/Pupil -> Specular Glint Sphere), eyelid folds, smile splines ("tube"), horns, buttons, seams, and highlights.
-3. PHYSICAL MATERIALS (MeshPhysicalMaterial):
+3. CSG BOOLEAN OPERATIONS (Subtract / Union / Intersect):
+   - You can carve or carve cavities into base shapes before inserting eyes or details.
+   - To hollow out or carve, set "boolean": { "operation": "subtract", "target": "parent_or_target_id" }.
+   - Example: create an "eye_socket_left" sphere with boolean "subtract" targeting "head", then place the eyeball mesh inside that carved cavity.
+4. PHYSICAL MATERIALS (MeshPhysicalMaterial):
    - Assign "clearcoat" (0.0 to 1.0) to give glossy lacquer/vinyl sheen to eyes, helmets, gems, or polished figurines.
    - Prefer "roundedBox" over sharp "box" to produce soft, realistic bevels with specular edge reflections.
 
@@ -1700,6 +1750,10 @@ JSON SCHEMA:
       "id": "unique_string_id",
       "parent": "parent_id_or_null",
       "type": "roundedBox" | "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
+      "boolean": {
+        "operation": "subtract" | "union" | "intersect",
+        "target": "target_id"
+      },
       "parameters": {
         // roundedBox: "width": float, "height": float, "depth": float, "radius": float, "segments": int
         // box: "width": float, "height": float, "depth": float
@@ -1724,33 +1778,9 @@ JSON SCHEMA:
     }
   ]
 }
-
-==================================================
-MODE 1: VOLUMETRIC RECONSTRUCTION FROM 2D IMAGES
-==================================================
-1. SCULPTING IN TRUE ROUNDED 3D:
-   - Identify main mass: use "sphere" or "capsule" with scale [sx, sy, sz] to establish a round, plump core.
-   - For organic / flame / creature heads: build the silhouette using intersecting 3D curved shapes so it is thick, rounded, and attractive from front, side, and back.
-2. MULTI-VIEW RECONCILIATION:
-   - If both Front and Side views are given, match both silhouettes into a single coherent 3D sculpture.
-   - If only Front view is given, invent the natural depth (Z-thickness) assuming plush toy or vinyl figurine proportions.
-3. DETAILED FACIAL FEATURES:
-   - Eyes: curved spheres or beveled discs anchored to the front contour with parent="head" or "body".
-   - Limbs: smooth 3D splines ("tube") with natural bend angles.
-
-==================================================
-MODE 2: 3D FROM TEXT PROMPT
-==================================================
-1. Construct organic creatures with rich volume, lively posture, and tactile materials.
-2. Ground contact: Lowest feet or base resting near Y = 0. Center of mass centered at X = 0, Z = 0.
-
-==================================================
-MODE 3: ITERATIVE REFINEMENT & POSE
-==================================================
-1. Retain existing geometry and object IDs when making modifications, only updating targeted properties or appending new accessories.
-2. For pose requests (Stand, Run, Sit, Wave): adjust rotations of joints and limb parts naturally while keeping anatomy intact.
 `;
 
+    // ปุ่ม Generate 3D (Stage 1 Macro Pass)
     generateBtn.addEventListener('click', async () => {
       const apiKey = apiKeyInput.value.trim();
       const prompt = promptInput.value.trim();
@@ -1767,6 +1797,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
 
       setStatus('generating', currentSpec ? 'กำลังส่งคำสั่งปรับปรุงโมเดลเดิมไปยัง Gemini...' : 'Connecting to Gemini API...');
       generateBtn.disabled = true;
+      refineDetailsBtn.disabled = true;
       snapPngBtn.disabled = true;
       undoBtn.disabled = true;
       resetBtn.disabled = true;
@@ -1827,14 +1858,8 @@ MODE 3: ITERATIVE REFINEMENT & POSE
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [
-              {
-                parts: parts
-              }
-            ],
-            systemInstruction: {
-              parts: [{ text: SYSTEM_PROMPT }]
-            },
+            contents: [{ parts: parts }],
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
             generationConfig: {
               responseMimeType: "application/json",
               temperature: 0.1
@@ -1850,9 +1875,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
         const data = await response.json();
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
-        if (!rawText) {
-          throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
-        }
+        if (!rawText) throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
 
         const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
         const specData = JSON.parse(sanitizedText);
@@ -1879,6 +1902,88 @@ MODE 3: ITERATIVE REFINEMENT & POSE
       }
     });
 
+    // ปุ่ม Stage 2: เจาะลึกดีเทลระดับ Micro Pass (Hierarchical Detailing + CSG Boolean)
+    refineDetailsBtn.addEventListener('click', async () => {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) {
+        setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
+        return;
+      }
+      if (!currentSpec) {
+        setStatus('error', 'ต้องสร้างโมเดล 3D โครงหลักก่อนจึงจะเจาะลึกดีเทลได้');
+        return;
+      }
+
+      setStatus('generating', 'AI กำลังเจาะลึกดีเทลระดับ Micro (Stage 2 Pass) พร้อมคำนวณ CSG Boolean...');
+      generateBtn.disabled = true;
+      refineDetailsBtn.disabled = true;
+      snapPngBtn.disabled = true;
+      undoBtn.disabled = true;
+      resetBtn.disabled = true;
+      exportBtn.disabled = true;
+      poseButtons.forEach(btn => btn.disabled = true);
+      stickerButtons.forEach(btn => btn.disabled = true);
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
+
+      const userText = `CURRENT ACTIVE 3D MODEL (STAGE 1 BASE):
+${JSON.stringify(currentSpec)}
+
+STAGE 2 MICRO-REFINEMENT MANDATE:
+Perform an intensive Micro-Detailing and CSG Sculpting pass on this character!
+1. DO NOT change root body proportions, global scale, or core limb positions.
+2. Add 25 to 50 intricate secondary and tertiary sub-parts (layered eyes with cornea reflections, pupils, eyelid creases, ear recesses, clothing seams, armor plates, screws, horns, or buttons).
+3. Use CSG Boolean "subtract" operations on base shapes (e.g., carve eye sockets into "head", carve mouth cavity or armor groves) before inserting detailed eyes/accessories.
+4. Link new sub-parts to their respective parent IDs with correct local offsets so they never clip inside.
+5. Output the COMPLETE updated JSON containing all existing plus new parts.`;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userText }] }],
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.1
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
+
+        const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+        const specData = JSON.parse(sanitizedText);
+
+        currentSpec = specData;
+        const actionLabel = `✨ เจาะลึกดีเทลระดับ Micro (Stage 2 Pass)`;
+        promptSession.push(actionLabel);
+        modelHistory.push({
+          spec: JSON.parse(JSON.stringify(specData)),
+          session: [...promptSession]
+        });
+
+        renderModel(specData);
+        setStatus('ready', `เจาะลึกดีเทลระดับ Micro สำเร็จ! (ชิ้นส่วนรวม: ${specData.objects.length} ชิ้น)`);
+      } catch (err) {
+        setStatus('error', 'เจาะลึกดีเทลล้มเหลว: ' + err.message);
+      } finally {
+        generateBtn.disabled = false;
+        resetBtn.disabled = false;
+        updateActionButtonsState();
+        updateHistoryUI();
+        updateUndoButtonState();
+      }
+    });
+
     // ฟังก์ชันสั่งจัดท่าทางผ่าน Smart Pose Library
     async function applySmartPose(poseName, poseInstruction) {
       const apiKey = apiKeyInput.value.trim();
@@ -1893,6 +1998,7 @@ MODE 3: ITERATIVE REFINEMENT & POSE
 
       setStatus('generating', `AI กำลังคำนวณการจัดท่าทาง: ${poseName}...`);
       generateBtn.disabled = true;
+      refineDetailsBtn.disabled = true;
       snapPngBtn.disabled = true;
       undoBtn.disabled = true;
       resetBtn.disabled = true;
