@@ -284,7 +284,7 @@
       background: #6b2a2a;
     }
 
-    /* แผงปรับแต่งตำแหน่ง/ขนาดสติ๊กเกอร์หน้าตา (วางใต้ช่อง API Key) */
+    /* แผงปรับแต่งตำแหน่ง/ขนาดสติ๊กเกอร์หน้าตา */
     #sticker-adjust-panel {
       display: none;
       flex-direction: column;
@@ -517,7 +517,7 @@
       data-testid="api-key-input" 
       placeholder="ใส่ Gemini API Key ที่นี่" />
 
-    <!-- แผงปรับตำแหน่งและขยายสติ๊กเกอร์หน้าตา ย้ายมาวางใต้ช่อง API Key -->
+    <!-- แผงปรับตำแหน่งและขยายสติ๊กเกอร์หน้าตา -->
     <div id="sticker-adjust-panel">
       <div class="adjust-header">
         <span>🎮 ปรับสติ๊กเกอร์หน้าตา (มองเห็นโมเดลได้ชัดเจน)</span>
@@ -614,6 +614,10 @@
         <span>Metalness (โลหะ): <strong id="metalness-val">0.05</strong></span>
         <input type="range" id="part-metalness-input" min="0" max="1" step="0.05" value="0.05" />
       </div>
+      <div class="inspector-row">
+        <span>Clearcoat (เคลือบเงา): <strong id="clearcoat-val">0.00</strong></span>
+        <input type="range" id="part-clearcoat-input" min="0" max="1" step="0.05" value="0.00" />
+      </div>
       <button id="delete-part-btn" type="button">🗑️ ลบชิ้นส่วนนี้ออกจากโมเดล</button>
     </div>
 
@@ -648,6 +652,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
     // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
     if ('serviceWorker' in navigator) {
@@ -662,30 +667,7 @@
       });
     }
 
-    // ฟังก์ชันสร้าง Procedural Micro-Surface Noise Texture สำหรับเพิ่มความลึกและรายละเอียดระดับไมโคร
-    function createMicroNoiseTexture() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 128;
-      canvas.height = 128;
-      const ctx = canvas.getContext('2d');
-      const imgData = ctx.createImageData(128, 128);
-      for (let i = 0; i < imgData.data.length; i += 4) {
-        const val = Math.floor(Math.random() * 45 + 210);
-        imgData.data[i] = val;
-        imgData.data[i + 1] = val;
-        imgData.data[i + 2] = val;
-        imgData.data[i + 3] = 255;
-      }
-      ctx.putImageData(imgData, 0, 0);
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(6, 6);
-      return texture;
-    }
-    const microNoiseTexture = createMicroNoiseTexture();
-
-    // 2. การตั้งค่า Three.js Scene พร้อม Realistic Lighting, Tone Mapping, Soft Shadows และ IBL Environment
+    // 2. การตั้งค่า Three.js Scene พร้อมการเรนเดอร์ระดับสตูดิโอ (ACES Filmic + Studio IBL)
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -695,18 +677,18 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // เงาตกกระทบนุ่มนวลสมจริง
-    renderer.toneMapping = THREE.ACESFilmicToneMapping; // การเกลี่ยเฉดสีระดับฟิล์มฮอลลีวูด
-    renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
 
-    // การสร้าง IBL Radiance Map ด้วย RoomEnvironment
+    // สร้าง Environment Map จาก RoomEnvironment เพื่อให้วัตถุเกิดแสงสะท้อนสตูดิโอ 360 องศา
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
-    const roomEnv = new RoomEnvironment();
-    scene.environment = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+    const studioEnvTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = studioEnvTexture;
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -730,34 +712,33 @@
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 0.4);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 0.5);
     hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
-    // Key Light - ไฟหลักความละเอียดเงาสูง
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.25);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
     dirLight.position.set(10, 15, 10);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 35;
     dirLight.shadow.bias = -0.0001;
-    dirLight.shadow.radius = 2.5;
     scene.add(dirLight);
 
-    // Fill Light - ไฟเติมเงาด้านหน้า
-    const fillLight = new THREE.DirectionalLight(0xffeedd, 0.65);
-    fillLight.position.set(0, 2, 10);
+    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.6);
+    fillLight.position.set(-8, 6, -8);
     scene.add(fillLight);
-
-    // Rim / Backlight - ไฟส่องขอบเน้นรูปทรง (Silhouette) ให้ลอยเด่น
-    const rimLight = new THREE.DirectionalLight(0x60a5fa, 0.9);
-    rimLight.position.set(-8, 10, -8);
-    scene.add(rimLight);
 
     const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
     scene.add(gridHelper);
+
+    // ระนาบรับเงานุ่มนวลที่พื้น (Contact Soft Shadow Plane)
+    const shadowPlaneGeo = new THREE.PlaneGeometry(25, 25);
+    const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.35 });
+    const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.position.y = 0.001;
+    shadowPlane.receiveShadow = true;
+    scene.add(shadowPlane);
 
     const modelGroup = new THREE.Group();
     scene.add(modelGroup);
@@ -837,7 +818,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ Ultra-Smooth High-Fidelity Geometry
+    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ Ultra-Smooth Physical Shading & High-Fidelity Geometry
     function renderModel(spec) {
       deselectPart();
 
@@ -858,7 +839,19 @@
         let geometry;
         const p = item.parameters || {};
 
-        if (item.type === 'box') {
+        if (item.type === 'roundedBox') {
+          const w = p.width || 1;
+          const h = p.height || 1;
+          const d = p.depth || 1;
+          const defaultRadius = Math.min(w, h, d) * 0.15;
+          geometry = new RoundedBoxGeometry(
+            w,
+            h,
+            d,
+            p.segments || 5,
+            p.radius !== undefined ? p.radius : defaultRadius
+          );
+        } else if (item.type === 'box') {
           geometry = new THREE.BoxGeometry(p.width || 1, p.height || 1, p.depth || 1);
         } else if (item.type === 'cylinder') {
           geometry = new THREE.CylinderGeometry(
@@ -909,10 +902,10 @@
           const extrudeSettings = {
             depth: p.depth !== undefined ? p.depth : 0.35,
             bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
-            bevelSegments: p.bevelSegments || 8,
+            bevelSegments: p.bevelSegments || 6,
             steps: 2,
-            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.06,
-            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.06
+            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.05,
+            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.05
           };
           geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         } else if (item.type === 'tube') {
@@ -936,12 +929,12 @@
         }
 
         if (geometry) {
-          const material = new THREE.MeshStandardMaterial({
+          const material = new THREE.MeshPhysicalMaterial({
             color: item.color || '#cccccc',
             metalness: item.metalness !== undefined ? item.metalness : 0.05,
             roughness: item.roughness !== undefined ? item.roughness : 0.65,
-            bumpMap: microNoiseTexture, // ผิวสัมผัสแบบ Micro-surface Noise
-            bumpScale: 0.0025,
+            clearcoat: item.clearcoat !== undefined ? item.clearcoat : 0.0,
+            clearcoatRoughness: item.clearcoatRoughness !== undefined ? item.clearcoatRoughness : 0.1,
             side: item.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide
           });
 
@@ -1040,8 +1033,10 @@
     const partColorInput = document.getElementById('part-color-input');
     const partRoughnessInput = document.getElementById('part-roughness-input');
     const partMetalnessInput = document.getElementById('part-metalness-input');
+    const partClearcoatInput = document.getElementById('part-clearcoat-input');
     const roughnessVal = document.getElementById('roughness-val');
     const metalnessVal = document.getElementById('metalness-val');
+    const clearcoatVal = document.getElementById('clearcoat-val');
     const deletePartBtn = document.getElementById('delete-part-btn');
 
     let currentSpec = null;
@@ -1107,6 +1102,13 @@
         partMetalnessInput.value = mesh.material.metalness;
         metalnessVal.textContent = mesh.material.metalness.toFixed(2);
       }
+      if (mesh.material && mesh.material.clearcoat !== undefined) {
+        partClearcoatInput.value = mesh.material.clearcoat;
+        clearcoatVal.textContent = mesh.material.clearcoat.toFixed(2);
+      } else {
+        partClearcoatInput.value = 0;
+        clearcoatVal.textContent = '0.00';
+      }
     }
 
     // ฟังก์ชันปลดการเลือกชิ้นส่วน
@@ -1147,6 +1149,17 @@
       }
       const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
       if (targetObj) targetObj.metalness = val;
+    });
+
+    partClearcoatInput.addEventListener('input', (e) => {
+      if (!selectedMesh || !currentSpec) return;
+      const val = parseFloat(e.target.value);
+      clearcoatVal.textContent = val.toFixed(2);
+      if (selectedMesh.material) {
+        selectedMesh.material.clearcoat = val;
+      }
+      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+      if (targetObj) targetObj.clearcoat = val;
     });
 
     deletePartBtn.addEventListener('click', () => {
@@ -1234,10 +1247,11 @@
         await cameraFeed.play();
         cameraFeed.style.display = 'block';
 
-        // ปรับพื้นหลัง 3D เป็นโปร่งใส และซ่อน Grid เพื่อผสานกับภาพกล้องจริง
+        // ปรับพื้นหลัง 3D เป็นโปร่งใส และซ่อน Grid/Shadow เพื่อผสานกับภาพกล้องจริง
         scene.background = null;
         renderer.setClearColor(0x000000, 0);
         gridHelper.visible = false;
+        shadowPlane.visible = false;
 
         isCameraMode = true;
         cameraToggleBtn.textContent = '❌ ปิดกล้องจริง';
@@ -1261,6 +1275,7 @@
       scene.background = new THREE.Color(0x1a1a1a);
       renderer.setClearColor(0x1a1a1a, 1);
       gridHelper.visible = true;
+      shadowPlane.visible = true;
 
       isCameraMode = false;
       cameraToggleBtn.textContent = '📷 โหมดกล้องจริง';
@@ -1504,15 +1519,16 @@
       const faceTexture = new THREE.CanvasTexture(faceCanvas);
       faceTexture.needsUpdate = true;
 
-      const stickerMaterial = new THREE.MeshStandardMaterial({
+      const stickerMaterial = new THREE.MeshPhysicalMaterial({
         map: faceTexture,
         transparent: true,
         alphaTest: 0.05,
         polygonOffset: true,
         polygonOffsetFactor: -4,
         polygonOffsetUnits: -4,
-        roughness: 0.5,
+        roughness: 0.4,
         metalness: 0.0,
+        clearcoat: 0.3,
         side: THREE.DoubleSide
       });
 
@@ -1520,11 +1536,10 @@
       stickerMesh.name = 'face_sticker';
       stickerMesh.userData = { id: 'face_sticker' };
 
-      // ตั้งตำแหน่งเริ่มต้น: ขยับแกน Y ขึ้นไปด้านบนช่วงหัว (center.y + 35% ของความสูงโมเดล)
+      // ตั้งตำแหน่งเริ่มต้น: ขยับแกน Y ขึ้นไปด้านบนช่วงหัว
       stickerMesh.position.set(center.x, center.y + size.y * 0.35, box.max.z + 0.03);
       modelGroup.add(stickerMesh);
 
-      // แสดงแผงปรับแต่งตำแหน่งและสัดส่วนใน Sidebar (ใต้ช่อง API Key)
       stickerAdjustPanel.style.display = 'flex';
       setStatus('ready', `แปะสติกเกอร์หน้าตาแล้ว! ปรับเลื่อนหรือย่อขยายที่แผงใต้ช่อง API Key ได้ทันที`);
       updatePreviewSnapshot();
@@ -1659,21 +1674,19 @@
 
     const SYSTEM_PROMPT = `
 You are "PolyMorph 3D Master Sculptor" — an elite Procedural 3D Geometry and High-Fidelity Character Modeling Engine.
-Your core mission is to construct FULL VOLUMETRIC 3D DIGITAL FIGURINES (Vinyl toy / Pixar / CGI quality) from 2D images or text.
+Your core mission is to construct FULL VOLUMETRIC 3D DIGITAL FIGURINES (Vinyl toy / Pixar / CGI quality) with micro-details from 2D images or text.
 
 STRICT DESIGN MANDATES:
 1. NEVER CREATE FLAT 2D CARDBOARD CUTOUTS OR FLAT PLAQUES:
-   - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, volumetric compound forms, organic tapered lobes).
-   - An object must have substantial 360-degree volume: depth (Z-axis) must be proportional to width (X-axis) and height (Y-axis), typically depth >= 0.75 * width!
-2. HIGH PART DENSITY & MICRO-DETAILS:
-   - Do not settle for 5-10 simple pieces. Produce an intricate, high-fidelity character composed of 45 to 80 distinct parts.
-   - Sculpt detailed facial expressions: curved eye sockets, layered eyeballs (sclera + pupils + highlight glint spheres), expressive 3D spline mouth ("tube"), cheeks, and brow contours.
-   - Ensure facial features have their local Z-coordinates positioned well proud of the surface so they never clip inside the body.
-3. CURVATURE & BEVEL PERFECTION:
-   - For any "extrude" geometry, ALWAYS set "bevelEnabled": true, "bevelSegments": 8, "bevelSize": 0.06, and "bevelThickness": 0.06 to guarantee smooth, rounded edges.
-   - For "lathe" and "cylinder" geometry, ensure smooth radialSegments (>= 48) to avoid low-poly facets.
-4. PBR MATERIAL DIFFERENTIATION:
-   - Assign varied roughness and metalness: eyes/glints should be glossy (roughness: 0.05-0.1), body vinyl/rubber (roughness: 0.45-0.65, metalness: 0.0-0.05), and metal buckles/joints (metalness: 0.8-1.0, roughness: 0.2-0.35).
+   - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, roundedBox, volumetric compound forms, organic tapered lobes).
+   - Depth (Z-axis) must be proportional to width (X-axis) and height (Y-axis), typically depth >= 0.75 * width!
+2. THREE-TIER SCULPTING HIERARCHY (35 to 75 distinct parts):
+   - PRIMARY FORMS: Main body volume, head, hips, chest (using sphere, capsule, roundedBox).
+   - SECONDARY FORMS: Eye sockets, outer rims, ears, limbs with natural joints, snout, footwear soles.
+   - TERTIARY MICRO-DETAILS: Multi-layered eyes (Socket -> Sclera -> Iris/Pupil -> Specular Glint Sphere), eyelid folds, smile splines ("tube"), horns, buttons, seams, and highlights.
+3. PHYSICAL MATERIALS (MeshPhysicalMaterial):
+   - Assign "clearcoat" (0.0 to 1.0) to give glossy lacquer/vinyl sheen to eyes, helmets, gems, or polished figurines.
+   - Prefer "roundedBox" over sharp "box" to produce soft, realistic bevels with specular edge reflections.
 
 OUTPUT FORMAT REQUIREMENTS:
 - Output ONLY valid, raw JSON matching the schema below.
@@ -1686,8 +1699,9 @@ JSON SCHEMA:
     {
       "id": "unique_string_id",
       "parent": "parent_id_or_null",
-      "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
+      "type": "roundedBox" | "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
       "parameters": {
+        // roundedBox: "width": float, "height": float, "depth": float, "radius": float, "segments": int
         // box: "width": float, "height": float, "depth": float
         // cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
         // sphere: "radius": float, "widthSegments": int, "heightSegments": int
@@ -1705,7 +1719,8 @@ JSON SCHEMA:
       "scale": [scaleX, scaleY, scaleZ],
       "color": "#hexcode",
       "metalness": float_0_to_1,
-      "roughness": float_0_to_1
+      "roughness": float_0_to_1,
+      "clearcoat": float_0_to_1
     }
   ]
 }
@@ -1714,11 +1729,11 @@ JSON SCHEMA:
 MODE 1: VOLUMETRIC RECONSTRUCTION FROM 2D IMAGES
 ==================================================
 1. SCULPTING IN TRUE ROUNDED 3D:
-   - Identify main mass: use "sphere" or "capsule" with scale [sx, sy, sz] to establish a round, plump, tactile core.
-   - For organic / flame / creature heads: build the silhouette using intersecting 3D curved shapes so it is thick, rounded, and attractive from front, side, and back!
+   - Identify main mass: use "sphere" or "capsule" with scale [sx, sy, sz] to establish a round, plump core.
+   - For organic / flame / creature heads: build the silhouette using intersecting 3D curved shapes so it is thick, rounded, and attractive from front, side, and back.
 2. MULTI-VIEW RECONCILIATION:
    - If both Front and Side views are given, match both silhouettes into a single coherent 3D sculpture.
-   - If only Front view is given, invent the natural depth (Z-thickness) assuming a plush toy or vinyl figurine proportions.
+   - If only Front view is given, invent the natural depth (Z-thickness) assuming plush toy or vinyl figurine proportions.
 3. DETAILED FACIAL FEATURES:
    - Eyes: curved spheres or beveled discs anchored to the front contour with parent="head" or "body".
    - Limbs: smooth 3D splines ("tube") with natural bend angles.
