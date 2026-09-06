@@ -585,7 +585,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: รองเท้าวิ่งผ้าใบสีน้ำเงินเข้ม หรือ Firey บอลไฟ 3D หรือ หุ่นยนต์อวกาศ"></textarea>
+      placeholder="ตัวอย่าง: Yoshi ไดโนเสาร์เขียวถือไข่ หรือ รองเท้าวิ่งผ้าใบ หรือ หุ่นยนต์ไซไฟ"></textarea>
 
     <!-- Face Sticker / Decal Panel -->
     <div id="sticker-container">
@@ -669,6 +669,12 @@
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
     import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+    
+    // Post-processing Imports (GTAO Ambient Occlusion & Composer)
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
     // โหลด CSG Module แบบ Dynamic และ Safe Fallback
     let csgLib = null;
@@ -701,20 +707,20 @@
       });
     }
 
-    // 2. การตั้งค่า Three.js Scene พร้อมการเรนเดอร์ระดับสตูดิโอ (ACES Filmic + Studio IBL)
+    // 2. การตั้งค่า Three.js Scene พร้อมการเรนเดอร์ระดับสตูดิโอและ EffectComposer
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a1a);
+    scene.background = new THREE.Color(0x121212);
 
-    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(5, 5, 7);
+    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(5, 5, 8);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.1;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
 
@@ -723,6 +729,27 @@
     pmremGenerator.compileEquirectangularShader();
     const studioEnvTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = studioEnvTexture;
+
+    // ติดตั้ง Post-processing (GTAO Screen Space Ambient Occlusion)
+    let composer = null;
+    let gtaoPass = null;
+    try {
+      composer = new EffectComposer(renderer);
+      const renderPass = new RenderPass(scene, camera);
+      composer.addPass(renderPass);
+
+      gtaoPass = new GTAOPass(scene, camera, container.clientWidth, container.clientHeight);
+      gtaoPass.output = GTAOPass.OUTPUT.Default;
+      gtaoPass.blendIntensity = 0.85;
+      gtaoPass.radius = 0.35;
+      composer.addPass(gtaoPass);
+
+      const outputPass = new OutputPass();
+      composer.addPass(outputPass);
+    } catch (e) {
+      console.warn('GTAO Composer init failed, using standard rendering:', e);
+      composer = null;
+    }
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -743,39 +770,79 @@
       }
     });
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
-    scene.add(ambientLight);
-
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 0.5);
-    hemiLight.position.set(0, 20, 0);
+    // ==========================================
+    // Three-Point Studio Lighting + Strong Rim Light
+    // ==========================================
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1f2937, 0.45);
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
-    dirLight.position.set(10, 15, 10);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.bias = -0.0001;
-    scene.add(dirLight);
+    // 1. Key Light: แสงหลักด้านหน้า-บน
+    const keyLight = new THREE.DirectionalLight(0xfff7ed, 1.8);
+    keyLight.position.set(6, 12, 8);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.bias = -0.0001;
+    scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.6);
-    fillLight.position.set(-8, 6, -8);
+    // 2. Fill Light: แสงเกลี่ยเงาด้านข้างโทนเย็น
+    const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.65);
+    fillLight.position.set(-8, 5, 6);
     scene.add(fillLight);
 
-    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
-    scene.add(gridHelper);
+    // 3. Rim / Back Light: แสงส่องจากข้างหลังเน้นขอบโมเดลให้เด่นแบบ Yoshi
+    const rimLight = new THREE.DirectionalLight(0xffffff, 2.6);
+    rimLight.position.set(0, 9, -9);
+    scene.add(rimLight);
 
-    // ระนาบรับเงา Contact Shadow Plane
-    const shadowPlaneGeo = new THREE.PlaneGeometry(25, 25);
-    const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.35 });
-    const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
-    shadowPlane.rotation.x = -Math.PI / 2;
-    shadowPlane.position.y = 0.001;
-    shadowPlane.receiveShadow = true;
-    scene.add(shadowPlane);
+    // แท่นหินสตูดิโอวางฟิกเกอร์ (Studio Display Pedestal)
+    const pedestalGeo = new THREE.CylinderGeometry(3.2, 3.4, 0.22, 64);
+    const pedestalMat = new THREE.MeshPhysicalMaterial({
+      color: 0x222222,
+      roughness: 0.85,
+      metalness: 0.05,
+      clearcoat: 0.05
+    });
+    const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
+    pedestal.position.y = -0.11;
+    pedestal.receiveShadow = true;
+    scene.add(pedestal);
+
+    const gridHelper = new THREE.GridHelper(10, 10, 0x333333, 0x1c1c1c);
+    gridHelper.position.y = -0.23;
+    scene.add(gridHelper);
 
     const modelGroup = new THREE.Group();
     scene.add(modelGroup);
+
+    // ฟังก์ชันสร้าง Procedural Clay / Vinyl Normal Texture
+    function generateClayNormalTexture() {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.createImageData(size, size);
+      const data = imgData.data;
+
+      for (let i = 0; i < size * size; i++) {
+        const idx = i * 4;
+        const noiseX = (Math.random() - 0.5) * 22;
+        const noiseY = (Math.random() - 0.5) * 22;
+        data[idx] = Math.min(255, Math.max(0, 128 + noiseX));
+        data[idx + 1] = Math.min(255, Math.max(0, 128 + noiseY));
+        data[idx + 2] = 255;
+        data[idx + 3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(12, 12);
+      return tex;
+    }
+    const clayNormalTexture = generateClayNormalTexture();
 
     function updateViewport() {
       const width = container.clientWidth;
@@ -784,6 +851,10 @@
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         renderer.setSize(width, height);
+        if (composer) {
+          composer.setSize(width, height);
+          if (gtaoPass) gtaoPass.setSize(width, height);
+        }
       }
     }
 
@@ -794,11 +865,14 @@
       if (controls.enabled) {
         controls.update();
       }
-      renderer.render(scene, camera);
+      if (composer && !isCameraMode) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
     }
     animate();
 
-    // ฟังก์ชันจัดการล้างหน่วยความจำแบบ Recursive
     function disposeObject(obj) {
       if (obj.children) {
         while (obj.children.length > 0) {
@@ -820,7 +894,6 @@
       }
     }
 
-    // ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ
     function fitCameraToObject(object) {
       const box = new THREE.Box3().setFromObject(object);
       if (box.isEmpty()) return;
@@ -830,15 +903,14 @@
       const maxDim = Math.max(size.x, size.y, size.z);
       const fov = camera.fov * (Math.PI / 180);
       let cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-      cameraDistance *= 2.2;
+      cameraDistance *= 2.0;
 
-      camera.position.set(center.x + cameraDistance * 0.7, center.y + cameraDistance * 0.7, center.z + cameraDistance);
+      camera.position.set(center.x + cameraDistance * 0.7, center.y + cameraDistance * 0.6, center.z + cameraDistance * 1.1);
       camera.lookAt(center);
       controls.target.copy(center);
       controls.update();
     }
 
-    // ฟังก์ชันอัปเดตรูปพรีวิว Snapshot
     function updatePreviewSnapshot() {
       renderer.render(scene, camera);
       const dataUrl = renderer.domElement.toDataURL('image/png');
@@ -852,7 +924,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อมรองรับ CSG Boolean และสติ๊กเกอร์คงสถานะ
+    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อม Clay Texture & GTAO
     function renderModel(spec) {
       deselectPart();
 
@@ -870,7 +942,6 @@
       const objectMap = new Map();
       const booleanTasks = [];
 
-      // Step 1: สร้างรูปทรงเรขาคณิตพื้นฐานทั้งหมด
       spec.objects.forEach((item, index) => {
         let geometry;
         const p = item.parameters || {};
@@ -968,9 +1039,14 @@
           const material = new THREE.MeshPhysicalMaterial({
             color: item.color || '#cccccc',
             metalness: item.metalness !== undefined ? item.metalness : 0.05,
-            roughness: item.roughness !== undefined ? item.roughness : 0.65,
+            roughness: item.roughness !== undefined ? item.roughness : 0.7,
             clearcoat: item.clearcoat !== undefined ? item.clearcoat : 0.0,
             clearcoatRoughness: item.clearcoatRoughness !== undefined ? item.clearcoatRoughness : 0.1,
+            sheen: 0.35,
+            sheenRoughness: 0.6,
+            sheenColor: new THREE.Color(0xffffff),
+            normalMap: clayNormalTexture,
+            normalScale: new THREE.Vector2(0.25, 0.25),
             side: item.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide
           });
 
@@ -986,7 +1062,6 @@
           mesh.userData = { id: itemId };
           objectMap.set(itemId, mesh);
 
-          // ป้องกันก้อนเจาะ CSG Cutter โผล่ลอยเคว้ง (Fail-Safe Cutter)
           if (item.boolean && item.boolean.target && item.boolean.operation) {
             booleanTasks.push({ item, mesh });
             const opType = (item.boolean.operation || '').toLowerCase();
@@ -1003,7 +1078,7 @@
         }
       });
 
-      // Step 2: ประมวลผล CSG Boolean Operations (Subtract / Union / Intersect)
+      // ประมวลผล CSG Boolean Operations
       if (csgLib && booleanTasks.length > 0) {
         const { Brush, Evaluator, SUBTRACTION, ADDITION, INTERSECTION } = csgLib;
         const evaluator = new Evaluator();
@@ -1052,7 +1127,6 @@
         });
       }
 
-      // Step 3: ประกอบสติ๊กเกอร์หน้าตากลับคืนอัตโนมัติหากมีสถานะอยู่
       if (currentStickerState && currentStickerState.type) {
         applyFaceSticker(currentStickerState.type, true);
       }
@@ -1185,7 +1259,6 @@
       undoBtn.disabled = modelHistory.length <= 1;
     }
 
-    // ฟังก์ชันเลือกชิ้นส่วน 3D และเปิด Inspector
     function selectPart(mesh) {
       if (!mesh || !mesh.userData || !mesh.userData.id) return;
       selectedMesh = mesh;
@@ -1214,13 +1287,11 @@
       }
     }
 
-    // ฟังก์ชันปลดการเลือกชิ้นส่วน
     function deselectPart() {
       selectedMesh = null;
       inspectorContainer.style.display = 'none';
     }
 
-    // Inspector Event Listeners
     partColorInput.addEventListener('input', (e) => {
       if (!selectedMesh || !currentSpec) return;
       const newColor = e.target.value;
@@ -1275,7 +1346,6 @@
       setStatus('ready', `ลบชิ้นส่วน "${idToDelete}" สำเร็จ`);
     });
 
-    // Raycaster ตรวจจับการคลิกเลือกชิ้นส่วนบน Canvas
     let pointerDownCoord = { x: 0, y: 0 };
 
     container.addEventListener('pointerdown', (e) => {
@@ -1310,7 +1380,6 @@
       }
     });
 
-    // ปุ่ม Snap ดาวน์โหลดรูปภาพ PNG ทันที
     snapPngBtn.addEventListener('click', () => {
       if (!currentSpec) {
         setStatus('error', 'ไม่มีโมเดล 3D ให้บันทึกรูปภาพ');
@@ -1318,7 +1387,11 @@
       }
 
       deselectPart();
-      renderer.render(scene, camera);
+      if (composer && !isCameraMode) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
       const dataUrl = renderer.domElement.toDataURL('image/png');
 
       const tempLink = document.createElement('a');
@@ -1331,7 +1404,6 @@
       setStatus('ready', '📸 เซฟรูปภาพโมเดล 3D (PNG) ลงเครื่องเรียบร้อยแล้ว!');
     });
 
-    // ระบบเปิดกล้องสภาพแวดล้อมจริง และถ่ายรูป AR
     async function startCamera() {
       try {
         cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -1349,7 +1421,7 @@
         scene.background = null;
         renderer.setClearColor(0x000000, 0);
         gridHelper.visible = false;
-        shadowPlane.visible = false;
+        pedestal.visible = false;
 
         isCameraMode = true;
         cameraToggleBtn.textContent = '❌ ปิดกล้องจริง';
@@ -1369,10 +1441,10 @@
       cameraFeed.srcObject = null;
       cameraFeed.style.display = 'none';
 
-      scene.background = new THREE.Color(0x1a1a1a);
-      renderer.setClearColor(0x1a1a1a, 1);
+      scene.background = new THREE.Color(0x121212);
+      renderer.setClearColor(0x121212, 1);
       gridHelper.visible = true;
-      shadowPlane.visible = true;
+      pedestal.visible = true;
 
       isCameraMode = false;
       cameraToggleBtn.textContent = '📷 โหมดกล้องจริง';
@@ -1448,7 +1520,6 @@
       setStatus('ready', 'ถ่ายรูป AR รวมโมเดล 3D กับสภาพแวดล้อมจริงเรียบร้อยแล้ว!');
     });
 
-    // สติกเกอร์หน้าตาแนบผิว 2D Decal Canvas
     function createFaceCanvas(type) {
       const c = document.createElement('canvas');
       c.width = 512;
@@ -1563,7 +1634,6 @@
       return c;
     }
 
-    // ฟังก์ชันแปะสติกเกอร์หน้าตา พร้อมคงค่าพิกัด/สเกลที่ปรับแต่งไว้
     function applyFaceSticker(type, isRestoring = false) {
       if (!currentSpec) {
         setStatus('error', 'กรุณาสร้างโมเดล 3D ก่อนจึงจะแปะสติกเกอร์หน้าตาได้');
@@ -2182,7 +2252,6 @@ Perform an elite Master Finish pass on this 3D model to achieve photorealistic s
       }
     });
 
-    // ฟังก์ชันสั่งจัดท่าทางผ่าน Smart Pose Library
     async function applySmartPose(poseName, poseInstruction) {
       const apiKey = apiKeyInput.value.trim();
       if (!apiKey) {
