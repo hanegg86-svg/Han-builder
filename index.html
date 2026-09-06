@@ -119,6 +119,12 @@
     #reset-btn:hover:not(:disabled) {
       background: #b91c1c;
     }
+    #import-glb-btn {
+      background: #0ea5e9;
+    }
+    #import-glb-btn:hover:not(:disabled) {
+      background: #0284c7;
+    }
     #export-glb-btn {
       background: #28a745;
     }
@@ -646,6 +652,11 @@
     <button id="snap-png-btn" data-testid="snap-png-btn" disabled>📸 เซฟรูปภาพโมเดล (PNG)</button>
     <button id="undo-btn" data-testid="undo-btn" disabled>↩️ ย้อนกลับทรงก่อนหน้า</button>
     <button id="reset-btn" data-testid="reset-btn">🧹 ล้างคำสั่ง / เริ่มโมเดลใหม่</button>
+    
+    <!-- ปุ่ม Import GLB / GLTF -->
+    <button id="import-glb-btn" type="button">📥 Import โมเดล 3D (.glb / .gltf)</button>
+    <input type="file" id="glb-file-input" accept=".glb,.gltf" style="display: none;" />
+
     <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
     
     <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle</div>
@@ -667,6 +678,7 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
     import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
@@ -1108,6 +1120,8 @@
     const snapPngBtn = document.getElementById('snap-png-btn');
     const undoBtn = document.getElementById('undo-btn');
     const resetBtn = document.getElementById('reset-btn');
+    const importGlbBtn = document.getElementById('import-glb-btn');
+    const glbFileInput = document.getElementById('glb-file-input');
     const exportBtn = document.getElementById('export-glb-btn');
     const appStatus = document.getElementById('app-status');
     const downloadLink = document.getElementById('download-link');
@@ -1176,7 +1190,7 @@
     let sideImageMimeType = null;
 
     function updateActionButtonsState() {
-      const hasModel = currentSpec !== null;
+      const hasModel = currentSpec !== null || modelGroup.children.length > 0;
       refineDetailsBtn.disabled = !hasModel;
       polishStage3Btn.disabled = !hasModel;
       poseButtons.forEach(btn => btn.disabled = !hasModel);
@@ -1244,56 +1258,70 @@
     }
 
     partColorInput.addEventListener('input', (e) => {
-      if (!selectedMesh || !currentSpec) return;
+      if (!selectedMesh) return;
       const newColor = e.target.value;
       if (selectedMesh.material) {
         selectedMesh.material.color.set(newColor);
       }
-      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
-      if (targetObj) targetObj.color = newColor;
+      if (currentSpec && currentSpec.objects) {
+        const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+        if (targetObj) targetObj.color = newColor;
+      }
       updatePreviewSnapshot();
     });
 
     partRoughnessInput.addEventListener('input', (e) => {
-      if (!selectedMesh || !currentSpec) return;
+      if (!selectedMesh) return;
       const val = parseFloat(e.target.value);
       roughnessVal.textContent = val.toFixed(2);
       if (selectedMesh.material) {
         selectedMesh.material.roughness = val;
       }
-      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
-      if (targetObj) targetObj.roughness = val;
+      if (currentSpec && currentSpec.objects) {
+        const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+        if (targetObj) targetObj.roughness = val;
+      }
     });
 
     partMetalnessInput.addEventListener('input', (e) => {
-      if (!selectedMesh || !currentSpec) return;
+      if (!selectedMesh) return;
       const val = parseFloat(e.target.value);
       metalnessVal.textContent = val.toFixed(2);
       if (selectedMesh.material) {
         selectedMesh.material.metalness = val;
       }
-      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
-      if (targetObj) targetObj.metalness = val;
+      if (currentSpec && currentSpec.objects) {
+        const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+        if (targetObj) targetObj.metalness = val;
+      }
     });
 
     partClearcoatInput.addEventListener('input', (e) => {
-      if (!selectedMesh || !currentSpec) return;
+      if (!selectedMesh) return;
       const val = parseFloat(e.target.value);
       clearcoatVal.textContent = val.toFixed(2);
       if (selectedMesh.material) {
         selectedMesh.material.clearcoat = val;
       }
-      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
-      if (targetObj) targetObj.clearcoat = val;
+      if (currentSpec && currentSpec.objects) {
+        const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+        if (targetObj) targetObj.clearcoat = val;
+      }
     });
 
     deletePartBtn.addEventListener('click', () => {
-      if (!selectedMesh || !currentSpec) return;
+      if (!selectedMesh) return;
       const idToDelete = selectedMesh.userData.id;
 
-      currentSpec.objects = currentSpec.objects.filter(o => o.id !== idToDelete && o.parent !== idToDelete);
+      if (currentSpec && currentSpec.objects) {
+        currentSpec.objects = currentSpec.objects.filter(o => o.id !== idToDelete && o.parent !== idToDelete);
+      }
+      
+      const parentObj = selectedMesh.parent || modelGroup;
+      parentObj.remove(selectedMesh);
+      disposeObject(selectedMesh);
       deselectPart();
-      renderModel(currentSpec);
+      updatePreviewSnapshot();
       setStatus('ready', `ลบชิ้นส่วน "${idToDelete}" สำเร็จ`);
     });
 
@@ -1332,7 +1360,7 @@
     });
 
     snapPngBtn.addEventListener('click', () => {
-      if (!currentSpec) {
+      if (modelGroup.children.length === 0) {
         setStatus('error', 'ไม่มีโมเดล 3D ให้บันทึกรูปภาพ');
         return;
       }
@@ -1349,6 +1377,92 @@
       document.body.removeChild(tempLink);
 
       setStatus('ready', '📸 เซฟรูปภาพโมเดล 3D (PNG) ลงเครื่องเรียบร้อยแล้ว!');
+    });
+
+    // ระบบ Import โมเดล GLB / GLTF
+    importGlbBtn.addEventListener('click', () => {
+      glbFileInput.click();
+    });
+
+    glbFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      setStatus('generating', `กำลังโหลดไฟล์ "${file.name}" เข้าสู่ระบบ...`);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const arrayBuffer = event.target.result;
+        const loader = new GLTFLoader();
+        loader.parse(
+          arrayBuffer,
+          '',
+          (gltf) => {
+            deselectPart();
+
+            while (modelGroup.children.length > 0) {
+              const obj = modelGroup.children[0];
+              disposeObject(obj);
+              modelGroup.remove(obj);
+            }
+
+            const importedScene = gltf.scene || gltf.scenes[0];
+            let meshCount = 0;
+
+            importedScene.traverse((child) => {
+              if (child.isMesh) {
+                meshCount++;
+                child.castShadow = true;
+                child.receiveShadow = true;
+                const partId = child.name && child.name.trim() !== '' ? child.name : `part_${meshCount}`;
+                child.userData = { id: partId };
+              }
+            });
+
+            modelGroup.add(importedScene);
+
+            // สร้าง spec จำลองเพื่อให้เชื่อมโยงกับฟังก์ชันของระบบได้อย่างสมบูรณ์
+            currentSpec = {
+              type: 'imported_gltf',
+              filename: file.name,
+              objects: []
+            };
+
+            importedScene.traverse((child) => {
+              if (child.isMesh) {
+                currentSpec.objects.push({
+                  id: child.userData.id,
+                  type: 'mesh',
+                  color: child.material?.color ? '#' + child.material.color.getHexString() : '#cccccc',
+                  metalness: child.material?.metalness ?? 0.05,
+                  roughness: child.material?.roughness ?? 0.65,
+                  clearcoat: child.material?.clearcoat ?? 0.0
+                });
+              }
+            });
+
+            promptSession.push(`Import: ${file.name}`);
+            modelHistory.push({
+              spec: JSON.parse(JSON.stringify(currentSpec)),
+              session: [...promptSession],
+              stickerState: currentStickerState ? JSON.parse(JSON.stringify(currentStickerState)) : null
+            });
+
+            fitCameraToObject(modelGroup);
+            updatePreviewSnapshot();
+            updateActionButtonsState();
+            updateHistoryUI();
+            updateUndoButtonState();
+
+            setStatus('ready', `นำเข้าไฟล์ "${file.name}" สำเร็จ! (${meshCount} ชิ้นส่วน) สามารถแตะเพื่อปรับแต่งได้ทันที`);
+            glbFileInput.value = '';
+          },
+          (error) => {
+            setStatus('error', 'เปิดไฟล์ GLB ล้มเหลว: ' + error.message);
+            glbFileInput.value = '';
+          }
+        );
+      };
+      reader.readAsArrayBuffer(file);
     });
 
     async function startCamera() {
@@ -1580,8 +1694,8 @@
     }
 
     function applyFaceSticker(type, isRestoring = false) {
-      if (!currentSpec) {
-        setStatus('error', 'กรุณาสร้างโมเดล 3D ก่อนจึงจะแปะสติกเกอร์หน้าตาได้');
+      if (modelGroup.children.length === 0) {
+        setStatus('error', 'กรุณาสร้างหรือนำเข้าโมเดล 3D ก่อนจึงจะแปะสติกเกอร์หน้าตาได้');
         return;
       }
 
@@ -2203,8 +2317,8 @@ Perform an elite Master Finish pass on this 3D model to achieve photorealistic s
         setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
         return;
       }
-      if (!currentSpec) {
-        setStatus('error', 'ต้องสร้างโมเดล 3D ก่อนจึงจะจัดท่าทางได้');
+      if (!currentSpec && modelGroup.children.length === 0) {
+        setStatus('error', 'ต้องสร้างหรือนำเข้าโมเดล 3D ก่อนจึงจะจัดท่าทางได้');
         return;
       }
 
@@ -2330,6 +2444,8 @@ Perform an elite Master Finish pass on this 3D model to achieve photorealistic s
       sideImageMimeType = null;
       uploadedPreviewContainerSide.style.display = 'none';
       uploadedImagePreviewSide.src = '';
+
+      glbFileInput.value = '';
 
       previewContainer.style.display = 'none';
       downloadLink.style.display = 'none';
