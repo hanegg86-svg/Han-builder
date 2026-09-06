@@ -970,8 +970,13 @@
           mesh.userData = { id: itemId };
           objectMap.set(itemId, mesh);
 
+          // ป้องกันก้อนเจาะ CSG Cutter โผล่ลอยเคว้ง (Fail-Safe Cutter)
           if (item.boolean && item.boolean.target && item.boolean.operation) {
             booleanTasks.push({ item, mesh });
+            const opType = (item.boolean.operation || '').toLowerCase();
+            if (opType === 'subtract' || opType === 'intersect') {
+              mesh.visible = false;
+            }
           }
 
           if (item.parent && objectMap.has(item.parent)) {
@@ -1121,7 +1126,7 @@
     let promptSession = [];
     const modelHistory = [];
     let selectedMesh = null;
-    let currentStickerState = null; // จดจำสถานะสติ๊กเกอร์ { type, position, scale }
+    let currentStickerState = null;
 
     let frontImageBase64 = null;
     let frontImageMimeType = null;
@@ -1591,7 +1596,6 @@
       stickerMesh.name = 'face_sticker';
       stickerMesh.userData = { id: 'face_sticker' };
 
-      // นำตำแหน่งและสเกลเดิมกลับมาใส่ หรือตั้งค่าเริ่มต้นถ้าเป็นการแปะใหม่
       if (isRestoring && currentStickerState && currentStickerState.position && currentStickerState.scale) {
         stickerMesh.position.set(currentStickerState.position.x, currentStickerState.position.y, currentStickerState.position.z);
         stickerMesh.scale.set(currentStickerState.scale.x, currentStickerState.scale.y, currentStickerState.scale.z);
@@ -1647,7 +1651,6 @@
         sticker.scale.y *= 0.9;
       }
 
-      // บันทึกสถานะพิกัดและขนาดล่าสุดเข้า currentStickerState
       if (currentStickerState) {
         currentStickerState.position = { x: sticker.position.x, y: sticker.position.y, z: sticker.position.z };
         currentStickerState.scale = { x: sticker.scale.x, y: sticker.scale.y, z: sticker.scale.z };
@@ -1751,19 +1754,16 @@ Your core mission is to construct FULL VOLUMETRIC 3D DIGITAL FIGURINES (Vinyl to
 
 STRICT DESIGN MANDATES:
 1. NEVER CREATE FLAT 2D CARDBOARD CUTOUTS OR FLAT PLAQUES:
-   - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, roundedBox, volumetric compound forms, organic tapered lobes).
+   - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, Psyduck, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, roundedBox, organic tapered lobes).
    - Depth (Z-axis) must be proportional to width (X-axis) and height (Y-axis), typically depth >= 0.75 * width!
-2. MULTI-TIER SCULPTING HIERARCHY:
-   - PRIMARY FORMS: Main body volume, head, hips, chest (using sphere, capsule, roundedBox).
-   - SECONDARY FORMS: Eye sockets, outer rims, ears, limbs with natural joints, snout, footwear soles.
-   - TERTIARY MICRO-DETAILS: Multi-layered eyes (Socket -> Sclera -> Iris/Pupil -> Specular Glint Sphere), eyelid folds, smile splines ("tube"), horns, buttons, seams, and highlights.
+2. RESPECT CHARACTER TYPE (ORGANIC VS MECHANICAL):
+   - For cute, organic cartoon creatures or Pokémon (like Psyduck): DO NOT add mechanical grids, armor panels, robotic seams, screws, or nuts! Keep skin surfaces plump, cute, rounded, and smooth.
+   - Sculpt specific anatomical features: thick rounded duck bill, round white eyes with centered pupils, 3 black hair tufts on head, plump body, short rounded feet and wings.
 3. CSG BOOLEAN OPERATIONS (Subtract / Union / Intersect):
-   - You can carve or carve cavities into base shapes before inserting eyes or details.
-   - To hollow out or carve, set "boolean": { "operation": "subtract", "target": "parent_or_target_id" }.
-   - Example: create an "eye_socket_left" sphere with boolean "subtract" targeting "head", then place the eyeball mesh inside that carved cavity.
+   - CSG cutters should only be used where genuinely helpful (e.g. slight eye socket indentation). Ensure target exists and cutter is positioned strictly at the cavity site.
 4. PHYSICAL MATERIALS (MeshPhysicalMaterial):
-   - Assign "clearcoat" (0.0 to 1.0) to give glossy lacquer/vinyl sheen to eyes, helmets, gems, or polished figurines.
-   - Prefer "roundedBox" over sharp "box" to produce soft, realistic bevels with specular edge reflections.
+   - Assign "clearcoat" (0.0 to 1.0) for eyes or polished vinyl surfaces.
+   - Use "roundedBox" for blocky parts to get soft beveled reflections.
 
 OUTPUT FORMAT REQUIREMENTS:
 - Output ONLY valid, raw JSON matching the schema below.
@@ -1861,7 +1861,7 @@ JSON SCHEMA:
 
       if (currentSpec) {
         actionLabel = prompt || 'ปรับปรุงรายละเอียดโมเดลเพิ่มเติม';
-        userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Maintain full 3D volumetric roundness, rich micro-details, and existing object IDs. Output the full updated JSON.`;
+        userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Look at the reference image. Maintain full 3D volumetric roundness, rich micro-details, and existing object IDs. Output the full updated JSON.`;
       } else {
         if (frontImageBase64 && sideImageBase64) {
           actionLabel = prompt ? `แปลงภาพ Multi-View (หน้า+ข้าง) + ${prompt}` : 'แปลงภาพ Multi-View (หน้า+ข้าง) เป็น 3D Model';
@@ -1930,7 +1930,7 @@ JSON SCHEMA:
       }
     });
 
-    // ปุ่ม Stage 2: เจาะลึกดีเทลระดับ Micro Pass (Hierarchical Detailing + CSG Boolean)
+    // ปุ่ม Stage 2: เจาะลึกดีเทลระดับ Micro Pass (แนบรูปภาพเดิม + ป้องกันโมเดลเพี้ยน)
     refineDetailsBtn.addEventListener('click', async () => {
       const apiKey = apiKeyInput.value.trim();
       if (!apiKey) {
@@ -1942,7 +1942,7 @@ JSON SCHEMA:
         return;
       }
 
-      setStatus('generating', 'AI กำลังเจาะลึกดีเทลระดับ Micro (Stage 2 Pass) พร้อมคำนวณ CSG Boolean...');
+      setStatus('generating', 'AI กำลังวิเคราะห์รูปภาพและเจาะลึกดีเทลระดับ Micro (Stage 2 Pass)...');
       generateBtn.disabled = true;
       refineDetailsBtn.disabled = true;
       snapPngBtn.disabled = true;
@@ -1954,23 +1954,52 @@ JSON SCHEMA:
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
 
+      const parts = [];
+
+      // แนบภาพต้นฉบับเข้าไปด้วยเสมอ เพื่อให้ AI มีสายตามองเห็นงานจริง
+      if (frontImageBase64) {
+        parts.push({
+          inline_data: {
+            mime_type: frontImageMimeType || 'image/jpeg',
+            data: frontImageBase64
+          }
+        });
+      }
+
+      if (sideImageBase64) {
+        parts.push({
+          inline_data: {
+            mime_type: sideImageMimeType || 'image/jpeg',
+            data: sideImageBase64
+          }
+        });
+      }
+
       const userText = `CURRENT ACTIVE 3D MODEL (STAGE 1 BASE):
 ${JSON.stringify(currentSpec)}
 
 STAGE 2 MICRO-REFINEMENT MANDATE:
-Perform an intensive Micro-Detailing and CSG Sculpting pass on this character!
-1. DO NOT change root body proportions, global scale, or core limb positions.
-2. Add 25 to 50 intricate secondary and tertiary sub-parts (layered eyes with cornea reflections, pupils, eyelid creases, ear recesses, clothing seams, armor plates, screws, horns, or buttons).
-3. Use CSG Boolean "subtract" operations on base shapes (e.g., carve eye sockets into "head", carve mouth cavity or armor groves) before inserting detailed eyes/accessories.
-4. Link new sub-parts to their respective parent IDs with correct local offsets so they never clip inside.
-5. Output the COMPLETE updated JSON containing all existing plus new parts.`;
+Refine this 3D model into an ultra-clean, cute, volumetric 3D character figurine faithful to the provided reference artwork!
+1. STRICT ADHERENCE TO REFERENCE IMAGE:
+   - Study the drawing carefully. Match its proportions: head size, chubby body, bill/beak shape, webbed feet, and iconic pose/features.
+   - For cute organic characters / Pokémon (e.g. Psyduck): DO NOT add mechanical grids, armor cuts, panel lines, or screws! Keep body surfaces smooth, cute, and plump.
+2. ANATOMICAL PRECISION:
+   - Ensure bill is thick and curved properly at the front of the head.
+   - Add the 3 distinct hair tufts on top of the head using smooth "cone" or "tube" geometries.
+   - Eyes: Clean white sclera spheres with sharp black pupil dots looking confused/adorable.
+   - Wings/Hands: Natural placement touching head or resting on sides according to the artwork.
+3. GEOMETRY INTEGRITY:
+   - DO NOT create floating disconnected shapes. All child parts must be cleanly anchored.
+   - Output the COMPLETE updated JSON containing all parts.`;
+
+      parts.push({ text: userText });
 
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: userText }] }],
+            contents: [{ parts: parts }],
             systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
             generationConfig: {
               responseMimeType: "application/json",
@@ -2110,7 +2139,6 @@ Perform an intensive Micro-Detailing and CSG Sculpting pass on this character!
         currentSpec = JSON.parse(JSON.stringify(prevState.spec));
         promptSession = [...prevState.session];
         
-        // กู้คืนสถานะสติ๊กเกอร์ของจุดย้อนกลับ
         currentStickerState = prevState.stickerState ? JSON.parse(JSON.stringify(prevState.stickerState)) : null;
 
         renderModel(currentSpec);
@@ -2127,7 +2155,7 @@ Perform an intensive Micro-Detailing and CSG Sculpting pass on this character!
       currentSpec = null;
       promptSession = [];
       modelHistory.length = 0;
-      currentStickerState = null; // ล้างสถานะสติ๊กเกอร์ทั้งหมด
+      currentStickerState = null;
 
       if (stickerAdjustPanel) {
         stickerAdjustPanel.style.display = 'none';
