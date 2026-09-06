@@ -669,12 +669,6 @@
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
     import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-    
-    // Post-processing Imports (GTAO Ambient Occlusion & Composer)
-    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-    import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
-    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
     // โหลด CSG Module แบบ Dynamic และ Safe Fallback
     let csgLib = null;
@@ -707,7 +701,7 @@
       });
     }
 
-    // 2. การตั้งค่า Three.js Scene พร้อมการเรนเดอร์ระดับสตูดิโอและ EffectComposer
+    // 2. การตั้งค่า Three.js Scene พร้อมการเรนเดอร์ระดับสตูดิโอ (Stable Standard Rendering)
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x121212);
@@ -729,27 +723,6 @@
     pmremGenerator.compileEquirectangularShader();
     const studioEnvTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = studioEnvTexture;
-
-    // ติดตั้ง Post-processing (GTAO Screen Space Ambient Occlusion)
-    let composer = null;
-    let gtaoPass = null;
-    try {
-      composer = new EffectComposer(renderer);
-      const renderPass = new RenderPass(scene, camera);
-      composer.addPass(renderPass);
-
-      gtaoPass = new GTAOPass(scene, camera, container.clientWidth, container.clientHeight);
-      gtaoPass.output = GTAOPass.OUTPUT.Default;
-      gtaoPass.blendIntensity = 0.85;
-      gtaoPass.radius = 0.35;
-      composer.addPass(gtaoPass);
-
-      const outputPass = new OutputPass();
-      composer.addPass(outputPass);
-    } catch (e) {
-      console.warn('GTAO Composer init failed, using standard rendering:', e);
-      composer = null;
-    }
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -790,7 +763,7 @@
     fillLight.position.set(-8, 5, 6);
     scene.add(fillLight);
 
-    // 3. Rim / Back Light: แสงส่องจากข้างหลังเน้นขอบโมเดลให้เด่นแบบ Yoshi
+    // 3. Rim / Back Light: แสงส่องจากข้างหลังเน้นขอบโมเดลให้เด่น
     const rimLight = new THREE.DirectionalLight(0xffffff, 2.6);
     rimLight.position.set(0, 9, -9);
     scene.add(rimLight);
@@ -851,10 +824,6 @@
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         renderer.setSize(width, height);
-        if (composer) {
-          composer.setSize(width, height);
-          if (gtaoPass) gtaoPass.setSize(width, height);
-        }
       }
     }
 
@@ -865,11 +834,7 @@
       if (controls.enabled) {
         controls.update();
       }
-      if (composer && !isCameraMode) {
-        composer.render();
-      } else {
-        renderer.render(scene, camera);
-      }
+      renderer.render(scene, camera);
     }
     animate();
 
@@ -924,7 +889,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อม Clay Texture & GTAO
+    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อม Clay Texture
     function renderModel(spec) {
       deselectPart();
 
@@ -1387,11 +1352,7 @@
       }
 
       deselectPart();
-      if (composer && !isCameraMode) {
-        composer.render();
-      } else {
-        renderer.render(scene, camera);
-      }
+      renderer.render(scene, camera);
       const dataUrl = renderer.domElement.toDataURL('image/png');
 
       const tempLink = document.createElement('a');
