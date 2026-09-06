@@ -585,7 +585,7 @@
     <textarea 
       id="prompt-input" 
       data-testid="prompt-input" 
-      placeholder="ตัวอย่าง: Firey บอลไฟกลมอ้วน 3D หรือ หุ่นยนต์แมวอวกาศ"></textarea>
+      placeholder="ตัวอย่าง: รองเท้าวิ่งผ้าใบสีน้ำเงินเข้ม หรือ Firey บอลไฟ 3D หรือ หุ่นยนต์อวกาศ"></textarea>
 
     <!-- Face Sticker / Decal Panel -->
     <div id="sticker-container">
@@ -685,7 +685,6 @@
         navigator.serviceWorker.register('./sw.js')
           .then((registration) => {
             console.log('ServiceWorker registered with scope:', registration.scope);
-            // บังคับเช็คไฟล์อัปเดตบนเซิร์ฟเวอร์ทันทีที่เปิดหน้าเว็บ
             registration.update();
           })
           .catch((error) => {
@@ -696,7 +695,7 @@
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!refreshing) {
             refreshing = true;
-            window.location.reload(); // รีโหลดหน้าเว็บอัตโนมัติเมื่อติดตั้ง Service Worker ตัวใหม่สำเร็จ
+            window.location.reload();
           }
         });
       });
@@ -1514,7 +1513,6 @@
         ctx.ellipse(337, 210, 16, 24, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.beginPath();
         ctx.roundRect(170, 290, 172, 45, 10);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
@@ -1767,22 +1765,33 @@
       appStatus.textContent = `Status: ${message}`;
     }
 
+    // ==========================================
+    // SYSTEM PROMPT (UNIVERSAL OBJECT-AWARE)
+    // ==========================================
     const SYSTEM_PROMPT = `
-You are "PolyMorph 3D Master Sculptor" — an elite Procedural 3D Geometry and High-Fidelity Character Modeling Engine.
-Your core mission is to construct FULL VOLUMETRIC 3D DIGITAL FIGURINES (Vinyl toy / Pixar / CGI quality) with micro-details from 2D images or text.
+You are "PolyMorph 3D Universal Master Sculptor" — an elite Procedural 3D Geometry and Photorealistic Modeling Engine.
+Your core mission is to construct FULL VOLUMETRIC 3D DIGITAL REPLICAS (CGI / Product / Figurine quality) from 2D reference images or text.
 
-STRICT DESIGN MANDATES:
+STRICT UNIVERSAL DESIGN MANDATES:
 1. NEVER CREATE FLAT 2D CARDBOARD CUTOUTS OR FLAT PLAQUES:
-   - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, Psyduck, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, roundedBox, organic tapered lobes).
-   - Depth (Z-axis) must be proportional to width (X-axis) and height (Y-axis), typically depth >= 0.75 * width!
-2. RESPECT CHARACTER TYPE (ORGANIC VS MECHANICAL):
-   - For cute, organic cartoon creatures or Pokémon (like Psyduck): DO NOT add mechanical grids, armor panels, robotic seams, screws, or nuts! Keep skin surfaces plump, cute, rounded, and smooth.
-   - Sculpt specific anatomical features: thick rounded duck bill, round white eyes with centered pupils, 3 black hair tufts on head, plump body, short rounded feet and wings.
-3. CSG BOOLEAN OPERATIONS (Subtract / Union / Intersect):
-   - CSG cutters should only be used where genuinely helpful (e.g. slight eye socket indentation). Ensure target exists and cutter is positioned strictly at the cavity site.
-4. PHYSICAL MATERIALS (MeshPhysicalMaterial):
-   - Assign "clearcoat" (0.0 to 1.0) for eyes or polished vinyl surfaces.
-   - Use "roundedBox" for blocky parts to get soft beveled reflections.
+   - Every object MUST possess realistic 360-degree volume and true proportional thickness (Z-depth).
+2. ADAPTIVE OBJECT-TYPE RECOGNITION:
+   - Identify the EXACT nature of the target from image/prompt and sculpt strictly to its real-world anatomy:
+     * FOOTWEAR / SHOES: Sculpt Outsole tread bottom, Midsole cushion layer, Upper shoe body, Tongue, Lacing system (crossing tubes or loops), Ankle collar opening, and Heel counter.
+     * VEHICLES / HARD-SURFACE: Sculpt Chassis, Wheels/Tires, Cabin, Windshield, Aerodynamic panels, Bumpers, Lights.
+     * CHARACTERS / CREATURES: Sculpt Head, Torso, Limbs, Joint articulations, Expressive facial contours.
+     * EVERYDAY PRODUCTS / FURNITURE: Sculpt Primary functional volume, Legs/Mounts, Handles, Beveled rims, Seams.
+3. PREVENT UNWANTED MUTATIONS:
+   - NEVER hallucinate animal/creature parts (eyes, beaks, wings, tails) onto inanimate products like shoes, cars, or chairs!
+   - NEVER add robotic grids or mechanical cuts onto smooth, cute, or plush organic characters!
+4. CSG BOOLEAN OPERATIONS (Subtract / Union / Intersect):
+   - Use "subtract" boolean ONLY for genuine structural indentations (e.g. shoe ankle foot cavity, cockpit recess, eye socket hole).
+   - Ensure target exists and cutter is positioned strictly inside the target.
+5. MATERIAL FIDELITY (MeshPhysicalMaterial):
+   - Set "roughness", "metalness", and "clearcoat" according to the real materials:
+     * Rubber/Tread/Knit Fabric: roughness = 0.8 to 0.95, clearcoat = 0.0
+     * Polished Plastic/Leather/Vinyl/Eyes: roughness = 0.1 to 0.35, clearcoat = 0.5 to 1.0
+     * Metals/Chrome: metalness = 0.85 to 1.0, roughness = 0.1 to 0.3
 
 OUTPUT FORMAT REQUIREMENTS:
 - Output ONLY valid, raw JSON matching the schema below.
@@ -1826,7 +1835,7 @@ JSON SCHEMA:
 }
 `;
 
-    // ปุ่ม Generate 3D (Stage 1 Macro Pass)
+    // ปุ่ม Generate 3D (Stage 1 Macro Base Pass)
     generateBtn.addEventListener('click', async () => {
       const apiKey = apiKeyInput.value.trim();
       const prompt = promptInput.value.trim();
@@ -1881,14 +1890,14 @@ JSON SCHEMA:
 
       if (currentSpec) {
         actionLabel = prompt || 'ปรับปรุงรายละเอียดโมเดลเพิ่มเติม';
-        userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Look at the reference image. Maintain full 3D volumetric roundness, rich micro-details, and existing object IDs. Output the full updated JSON.`;
+        userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Carefully inspect the reference image or description. Maintain realistic 3D volumetric proportions, true object anatomy, and existing object IDs. Output the full updated JSON.`;
       } else {
         if (frontImageBase64 && sideImageBase64) {
           actionLabel = prompt ? `แปลงภาพ Multi-View (หน้า+ข้าง) + ${prompt}` : 'แปลงภาพ Multi-View (หน้า+ข้าง) เป็น 3D Model';
-          userText = `วิเคราะห์ภาพอ้างอิง 2 มุมมอง (Front + Side): ปั้นโมเดลเป็นทรง 3D หนา อวบอ้วนรอบทิศทาง (Full Volumetric 3D Sculpting) ห้ามทำเป็นแผ่นแบน ปั้นรายละเอียดหน้าตา แขนขา และอวัยวะให้มีมิติลึกซ้อนชั้นระดับไฮเอนด์ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
+          userText = `วิเคราะห์ภาพอ้างอิง 2 มุมมอง (Front + Side): ระบุประเภทวัตถุให้ถูกต้อง (เช่น รองเท้า, รถยนต์, สิ่งของ, หรือตัวละคร) แล้วปั้นโครงสร้าง 3D ให้มีมิติหนา นูน แน่นรอบทิศทาง (Full Volumetric 3D) ห้ามทำเป็นแผ่นแบน ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
         } else if (frontImageBase64) {
           actionLabel = prompt ? `แปลงภาพ 2D (หน้า) + ${prompt}` : 'แปลงรูปภาพ 2D เป็น 3D Model';
-          userText = `วิเคราะห์รูปภาพ 2D นี้: เปลี่ยนตัวละครในภาพให้กลายเป็นฟิกเกอร์ 3D เต็มตัวที่มีความหนา อ้วนกลมมนรอบทิศทาง (Full 360-degree Volume) ห้ามทำเป็นแผ่นแบน Extrude แผ่นเดียว ปั้นสรีระส่วนโค้งเว้าด้วยรูปทรงกลม/แคปซูล/ท่อโค้งซ้อนกันอย่างประณีต ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
+          userText = `วิเคราะห์รูปภาพ 2D นี้อย่างแม่นยำ: ระบุชนิดของวัตถุจริงในภาพ แล้วสร้างโมเดล 3D แบบเต็มสัดส่วน 360 องศา (Full 3D Volume) ตามสรีระโครงสร้างของสิ่งนั้นจริง ห้ามสับสนหรือสร้างอวัยวะแปลกปลอมที่ไม่ตรงกับรูปภาพ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
         } else if (sideImageBase64) {
           actionLabel = prompt ? `แปลงภาพ 2D (ข้าง) + ${prompt}` : 'แปลงรูปภาพมุมข้าง 2D เป็น 3D Model';
           userText = `วิเคราะห์รูปภาพมุมข้าง 2D นี้: ดึงโครงสร้างสรีระและความหนาแกน Z ของวัตถุหลักออกมาเป็นทรง 3D รอบทิศทาง ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
@@ -1950,7 +1959,7 @@ JSON SCHEMA:
       }
     });
 
-    // ปุ่ม Stage 2: เจาะลึกดีเทลระดับ Micro Pass (แนบรูปภาพเดิม + ป้องกันโมเดลเพี้ยน)
+    // ปุ่ม Stage 2: เจาะลึกดีเทลระดับ Micro Pass (Universal Adaptive Refinement)
     refineDetailsBtn.addEventListener('click', async () => {
       const apiKey = apiKeyInput.value.trim();
       if (!apiKey) {
@@ -1999,18 +2008,16 @@ JSON SCHEMA:
 ${JSON.stringify(currentSpec)}
 
 STAGE 2 MICRO-REFINEMENT MANDATE:
-Refine this 3D model into an ultra-clean, cute, volumetric 3D character figurine faithful to the provided reference artwork!
-1. STRICT ADHERENCE TO REFERENCE IMAGE:
-   - Study the drawing carefully. Match its proportions: head size, chubby body, bill/beak shape, webbed feet, and iconic pose/features.
-   - For cute organic characters / Pokémon (e.g. Psyduck): DO NOT add mechanical grids, armor cuts, panel lines, or screws! Keep body surfaces smooth, cute, and plump.
-2. ANATOMICAL PRECISION:
-   - Ensure bill is thick and curved properly at the front of the head.
-   - Add the 3 distinct hair tufts on top of the head using smooth "cone" or "tube" geometries.
-   - Eyes: Clean white sclera spheres with sharp black pupil dots looking confused/adorable.
-   - Wings/Hands: Natural placement touching head or resting on sides according to the artwork.
-3. GEOMETRY INTEGRITY:
-   - DO NOT create floating disconnected shapes. All child parts must be cleanly anchored.
-   - Output the COMPLETE updated JSON containing all parts.`;
+Refine this 3D model with rich anatomical and structural secondary/tertiary micro-details strictly faithful to the reference input!
+1. STRICT ADHERENCE TO OBJECT TYPE:
+   - If FOOTWEAR / SHOES: Add laces using "tube" geometries crisscrossing the tongue, carve ankle opening cavity with boolean "subtract" or inner rim, add midsole cushions, outsole grip tread slices, and heel loop tab.
+   - If VEHICLES / TECH: Add wheel rims, tire treads, headlights/taillights, side mirrors, aerodynamic splitters, and panel insets.
+   - If CHARACTERS / CREATURES: Add fingers, ear folds, hair locks, clothing trims, eye pupils/highlights.
+   - If PRODUCTS / FURNITURE: Add bevels, handles, button accents, seam ridges.
+2. PRESERVE FOUNDATION:
+   - Keep primary object dimensions, global scale, and core parent IDs intact.
+   - Anchor every new detail cleanly to its logical parent part.
+3. Output the COMPLETE updated JSON containing all parts.`;
 
       parts.push({ text: userText });
 
@@ -2062,7 +2069,7 @@ Refine this 3D model into an ultra-clean, cute, volumetric 3D character figurine
       }
     });
 
-    // ปุ่ม Stage 3: ขัดเกลาความละเอียดขั้นสุด (Hyper-Detailing & Material Polish Pass)
+    // ปุ่ม Stage 3: ขัดเกลาความละเอียดขั้นสุด (Universal Material Polish Pass)
     polishStage3Btn.addEventListener('click', async () => {
       const apiKey = apiKeyInput.value.trim();
       if (!apiKey) {
@@ -2074,7 +2081,7 @@ Refine this 3D model into an ultra-clean, cute, volumetric 3D character figurine
         return;
       }
 
-      setStatus('generating', 'AI กำลังขัดเกลาเนื้อวัสดุและประกายแววตาขั้นสุด (Stage 3 Polish Pass)...');
+      setStatus('generating', 'AI กำลังขัดเกลาเนื้อวัสดุและปรับแต่งความสมจริงขั้นสุด (Stage 3 Polish Pass)...');
       generateBtn.disabled = true;
       refineDetailsBtn.disabled = true;
       polishStage3Btn.disabled = true;
@@ -2111,19 +2118,18 @@ Refine this 3D model into an ultra-clean, cute, volumetric 3D character figurine
 ${JSON.stringify(currentSpec)}
 
 STAGE 3 HYPER-DETAILING & MATERIAL POLISH PASS MANDATE:
-Perform an elite Master Figurine polish pass on this character model to achieve studio vinyl figurine quality!
-1. MATERIAL DIFFERENTIATION & POLISH:
-   - Tune "roughness", "metalness", and "clearcoat" per anatomical part:
-     * Eyes / Sclera / Pupils: clearcoat = 1.0, roughness = 0.05 (glossy glass/resin reflections).
-     * Duck bill / Beak / Claws: clearcoat = 0.4, roughness = 0.3 (polished tactile finish).
-     * Main Body & Head Skin: clearcoat = 0.0, roughness = 0.85 (soft matte velvety vinyl).
-2. HYPER-DETAILS & SPECULAR GLINTS:
-   - Add micro specular reflection glints to the eyes (tiny white spheres parented to the pupils offset slightly on Z).
-   - Finesse beak nostrils or mouth seam contours if appropriate.
-   - Refine the 3 hair strands so they have organic tapered thickness and distinct directional spread.
-3. ANTI-CLIPPING & CLEAN SILHOUETTE:
-   - Ensure all sub-features are cleanly grounded or parented without internal z-fighting or clipping.
-   - DO NOT alter core body anatomy or delete primary IDs.
+Perform an elite Master Finish pass on this 3D model to achieve photorealistic studio rendering!
+1. CONTEXTUAL MATERIAL POLISH:
+   - Identify each sub-part's authentic physical material and calibrate its shader values:
+     * Rubber soles / fabric mesh / tires: roughness = 0.85 to 0.95, clearcoat = 0.0, metalness = 0.0
+     * Glossy plastics / patent leather / car paint: roughness = 0.15 to 0.3, clearcoat = 0.7 to 1.0
+     * Metallic eyelets / chrome exhausts / metal hardware: metalness = 0.85 to 1.0, roughness = 0.1 to 0.25
+     * Glass / lenses / gemstone: roughness = 0.05, clearcoat = 1.0
+2. MICRO-ACCENTS:
+   - Add fine logo badges, lace tip aglets, reflector strips, seam contours, or subtle trim highlights.
+3. ANTI-CLIPPING & PERFECTION:
+   - Eliminate any internal mesh overlapping or z-fighting.
+   - DO NOT alter core silhouette proportions.
    - Output the COMPLETE final polished JSON containing all objects.`;
 
       parts.push({ text: userText });

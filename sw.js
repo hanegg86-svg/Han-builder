@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agent-3d-builder-v28-force';
+const CACHE_NAME = 'agent-3d-builder-v29-universal';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -8,7 +8,6 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
-  // บังคับให้ Service Worker ตัวใหม่เปิดทำงานทันทีโดยไม่ต้องรอปิดแท็บ
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -22,19 +21,17 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          // ล้างแคชเวอร์ชันเก่าทิ้งทั้งหมดทันที
           if (key !== CACHE_NAME) {
             console.log('Clearing old cache:', key);
             return caches.delete(key);
           }
         })
       );
-    }).then(() => self.clients.claim()) // เข้าควบคุมทุกหน้าเว็บทันที
+    }).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  // ไม่แตะต้องคำสั่งเรียก Gemini API
   if (event.request.url.includes('googleapis.com') || event.request.method !== 'GET') {
     return;
   }
@@ -45,7 +42,6 @@ self.addEventListener('fetch', (event) => {
                  (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'));
 
   if (isHtml) {
-    // ใช้ Network-First สำหรับหน้าเว็บ เพื่อดึงไฟล์สดล่าสุดจากเซิร์ฟเวอร์ก่อนเสมอ
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
@@ -62,7 +58,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ทรัพยากรอื่น ๆ ใช้ Cache-First พร้อมสำรอง Network
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       return cachedResponse || fetch(event.request).then((networkResponse) => {
