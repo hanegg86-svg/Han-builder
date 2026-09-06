@@ -768,21 +768,7 @@
     rimLight.position.set(0, 9, -9);
     scene.add(rimLight);
 
-    // แท่นหินสตูดิโอวางฟิกเกอร์ (Studio Display Pedestal)
-    const pedestalGeo = new THREE.CylinderGeometry(3.2, 3.4, 0.22, 64);
-    const pedestalMat = new THREE.MeshPhysicalMaterial({
-      color: 0x222222,
-      roughness: 0.85,
-      metalness: 0.05,
-      clearcoat: 0.05
-    });
-    const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
-    pedestal.position.y = -0.11;
-    pedestal.receiveShadow = true;
-    scene.add(pedestal);
-
     const gridHelper = new THREE.GridHelper(10, 10, 0x333333, 0x1c1c1c);
-    gridHelper.position.y = -0.23;
     scene.add(gridHelper);
 
     const modelGroup = new THREE.Group();
@@ -1382,7 +1368,6 @@
         scene.background = null;
         renderer.setClearColor(0x000000, 0);
         gridHelper.visible = false;
-        pedestal.visible = false;
 
         isCameraMode = true;
         cameraToggleBtn.textContent = '❌ ปิดกล้องจริง';
@@ -1405,7 +1390,6 @@
       scene.background = new THREE.Color(0x121212);
       renderer.setClearColor(0x121212, 1);
       gridHelper.visible = true;
-      pedestal.visible = true;
 
       isCameraMode = false;
       cameraToggleBtn.textContent = '📷 โหมดกล้องจริง';
