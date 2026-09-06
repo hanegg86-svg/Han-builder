@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Photogrammetry 3D Blueprint Architect</title>
+  <title>Agent 3D Builder</title>
 
   <!-- PWA & Mobile Web App Settings -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#12161f">
+  <meta name="theme-color" content="#1a1a1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="3D Architect">
+  <meta name="apple-mobile-web-app-title" content="3D Builder">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
@@ -25,42 +25,29 @@
       display: flex;
       flex-direction: row;
       height: 100vh;
-      background-color: #0f172a;
-      color: #f8fafc;
+      background-color: #1a1a1a;
+      color: #ffffff;
       overflow: hidden;
     }
     #sidebar {
-      width: 420px;
-      min-width: 340px;
+      width: 380px;
+      min-width: 320px;
       padding: 20px;
-      background: #1e293b;
+      background: #242424;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      border-right: 1px solid #334155;
+      border-right: 1px solid #333333;
       z-index: 10;
       overflow-y: auto;
     }
     h1 {
-      font-size: 1.15rem;
-      color: #38bdf8;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .badge {
-      font-size: 10px;
-      background: #0284c7;
-      color: #fff;
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      font-weight: bold;
+      font-size: 1.2rem;
+      color: #00d2ff;
     }
     label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #94a3b8;
+      font-size: 13px;
+      color: #cccccc;
       margin-bottom: -6px;
     }
     input[type="password"],
@@ -70,10 +57,10 @@
       width: 100%;
       padding: 10px;
       border-radius: 6px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #f8fafc;
-      font-size: 13px;
+      border: 1px solid #444;
+      background: #181818;
+      color: #fff;
+      font-size: 14px;
       line-height: 1.5;
     }
     input[type="file"] {
@@ -81,39 +68,38 @@
       cursor: pointer;
     }
     textarea {
-      height: 70px;
+      height: 85px;
       resize: vertical;
     }
     button {
-      padding: 11px 16px;
+      padding: 12px 16px;
       border-radius: 6px;
       border: none;
-      background: #0284c7;
+      background: #0084ff;
       color: white;
       font-weight: bold;
       cursor: pointer;
-      transition: all 0.2s;
-      font-size: 13px;
+      transition: background 0.2s;
+      font-size: 14px;
     }
     button:hover:not(:disabled) {
-      background: #0369a1;
+      background: #0070d6;
     }
     button:disabled {
-      background: #475569;
+      background: #555555;
       cursor: not-allowed;
-      opacity: 0.6;
-    }
-    #analyze-btn {
-      background: #2563eb;
-    }
-    #analyze-btn:hover:not(:disabled) {
-      background: #1d4ed8;
     }
     #snap-png-btn {
-      background: #475569;
+      background: #6366f1;
     }
     #snap-png-btn:hover:not(:disabled) {
-      background: #334155;
+      background: #4f46e5;
+    }
+    #undo-btn {
+      background: #6b7280;
+    }
+    #undo-btn:hover:not(:disabled) {
+      background: #4b5563;
     }
     #reset-btn {
       background: #dc2626;
@@ -121,43 +107,61 @@
     #reset-btn:hover:not(:disabled) {
       background: #b91c1c;
     }
-    #export-json-btn {
-      background: #059669;
+    #export-glb-btn {
+      background: #28a745;
     }
-    #export-json-btn:hover:not(:disabled) {
-      background: #047857;
+    #export-glb-btn:hover:not(:disabled) {
+      background: #218838;
     }
     #app-status {
       padding: 10px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #94a3b8;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #333333;
+      color: #bbbbbb;
       word-break: break-word;
     }
     #app-status[data-status="ready"] {
-      background: #064e3b;
-      border-color: #059669;
-      color: #34d399;
+      background: #14381e;
+      color: #4ade80;
     }
     #app-status[data-status="generating"] {
-      background: #78350f;
-      border-color: #d97706;
-      color: #fde68a;
+      background: #3e3312;
+      color: #facc15;
     }
     #app-status[data-status="error"] {
-      background: #450a0a;
-      border-color: #dc2626;
-      color: #fca5a5;
+      background: #441717;
+      color: #f87171;
     }
-
+    #download-link,
+    #download-image-btn {
+      display: inline-block;
+      text-align: center;
+      padding: 12px;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    #download-link {
+      background: #10b981;
+    }
+    #download-link:hover {
+      background: #059669;
+    }
+    #download-image-btn {
+      background: #4f46e5;
+    }
+    #download-image-btn:hover {
+      background: #4338ca;
+    }
     #canvas-container {
       flex: 1;
       height: 100%;
       position: relative;
       min-height: 250px;
-      background-color: #0b0f19;
+      background-color: #111111;
       overflow: hidden;
     }
     #canvas-container canvas {
@@ -176,104 +180,204 @@
       display: none;
       z-index: 1;
     }
-
-    /* Reference Previews */
-    #uploaded-preview-container-front {
+    #preview-container,
+    #uploaded-preview-container-front,
+    #uploaded-preview-container-side {
       display: none;
       flex-direction: column;
-      gap: 8px;
-      background: #0f172a;
-      padding: 10px;
+      gap: 10px;
+      background: #1e1e1e;
+      padding: 12px;
       border-radius: 6px;
-      border: 1px solid #334155;
+      border: 1px solid #333;
     }
-    #uploaded-image-preview-front {
+    #preview-image,
+    #uploaded-image-preview-front,
+    #uploaded-image-preview-side {
       width: 100%;
       height: auto;
       max-height: 140px;
       object-fit: contain;
-      background: #020617;
+      background: #141414;
       border-radius: 4px;
+      border: 1px solid #444;
     }
-    #remove-image-btn-front {
+    #remove-image-btn-front,
+    #remove-image-btn-side {
       background: #dc2626;
       padding: 6px 10px;
       font-size: 12px;
     }
+    #remove-image-btn-front:hover,
+    #remove-image-btn-side:hover {
+      background: #b91c1c;
+    }
 
-    /* Technical Blueprint Cards */
-    #blueprint-dashboard {
-      display: none;
-      flex-direction: column;
-      gap: 12px;
-      background: #0f172a;
-      border: 1px solid #0284c7;
-      border-radius: 8px;
+    #history-box {
+      background: #181818;
+      border: 1px solid #333;
+      border-radius: 6px;
       padding: 12px;
       font-size: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 130px;
+      overflow-y: auto;
     }
-    .bp-card-title {
+    #history-box-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #00d2ff;
+      margin-bottom: 2px;
+    }
+    #history-list {
+      list-style-type: decimal;
+      padding-left: 18px;
+      color: #bbbbbb;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      word-break: break-word;
+    }
+
+    /* Smart Pose Library Panel */
+    #pose-container,
+    #sticker-container {
+      background: #1c2430;
+      border: 1px solid #2d3748;
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #pose-title,
+    #sticker-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #60a5fa;
+    }
+    .pose-grid,
+    .sticker-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .pose-btn,
+    .sticker-btn {
+      padding: 8px 10px;
+      font-size: 12px;
+      background: #374151;
+      border-radius: 4px;
+      font-weight: normal;
+    }
+    .pose-btn:hover:not(:disabled),
+    .sticker-btn:hover:not(:disabled) {
+      background: #4b5563;
+    }
+    #sticker-remove-btn {
+      grid-column: span 2;
+      background: #4b2323;
+    }
+    #sticker-remove-btn:hover:not(:disabled) {
+      background: #6b2a2a;
+    }
+
+    /* แผงปรับแต่งตำแหน่ง/ขนาดสติ๊กเกอร์หน้าตา (วางใต้ช่อง API Key) */
+    #sticker-adjust-panel {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      background: #1c2430;
+      border: 1px solid #3b82f6;
+      border-radius: 6px;
+      padding: 10px;
+      width: 100%;
+    }
+    .adjust-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: bold;
+      color: #93c5fd;
+      margin-bottom: 2px;
+    }
+    .adjust-grid-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+    .adjust-btn {
+      padding: 8px 2px;
+      font-size: 11px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      color: #f1f5f9;
+      font-weight: normal;
+      text-align: center;
+      cursor: pointer;
+    }
+    .adjust-btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #60a5fa;
+    }
+
+    /* Inspector ปรับแต่งชิ้นส่วน 3D */
+    #inspector-container {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #inspector-header {
       font-size: 13px;
       font-weight: bold;
       color: #38bdf8;
-      border-bottom: 1px solid #1e293b;
-      padding-bottom: 4px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .bp-row {
+    #selected-part-id {
+      background: #111827;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #facc15;
+      font-size: 12px;
+    }
+    .inspector-row {
       display: flex;
+      align-items: center;
       justify-content: space-between;
       gap: 8px;
-      line-height: 1.4;
+      font-size: 12px;
     }
-    .bp-label {
-      color: #64748b;
-    }
-    .bp-value {
-      color: #e2e8f0;
-      font-weight: 500;
-      text-align: right;
-    }
-    .palette-box {
-      display: flex;
-      gap: 6px;
-      margin-top: 4px;
-    }
-    .palette-chip {
-      width: 28px;
-      height: 20px;
-      border-radius: 4px;
-      border: 1px solid #475569;
-    }
-    .prompt-box {
-      background: #020617;
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #1e293b;
-      font-family: monospace;
-      font-size: 11px;
-      color: #93c5fd;
-      max-height: 80px;
-      overflow-y: auto;
-      word-break: break-all;
-    }
-    .btn-copy {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #93c5fd;
-      padding: 4px 8px;
-      font-size: 11px;
+    .inspector-row input[type="color"] {
+      border: none;
+      width: 48px;
+      height: 28px;
       border-radius: 4px;
       cursor: pointer;
+      background: transparent;
     }
-    .btn-copy:hover {
-      background: #334155;
-      color: #fff;
+    .inspector-row input[type="range"] {
+      flex: 1;
+    }
+    #delete-part-btn {
+      background: #ef4444;
+      padding: 8px;
+      font-size: 12px;
+    }
+    #delete-part-btn:hover {
+      background: #dc2626;
     }
 
-    /* AR & 3D Top bar */
+    /* แถบควบคุมกล้องถ่ายภาพ AR */
     #camera-control-bar {
       position: absolute;
       top: 12px;
@@ -287,20 +391,26 @@
       padding: 6px 12px;
       font-size: 12px;
       border-radius: 20px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid #334155;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid #555;
       color: #fff;
       backdrop-filter: blur(4px);
       cursor: pointer;
+      transition: all 0.2s;
     }
     #camera-toggle-btn.active-camera {
       background: rgba(220, 38, 38, 0.85);
       border-color: #ef4444;
     }
     #camera-snap-btn {
-      background: rgba(5, 150, 105, 0.85);
+      background: rgba(16, 185, 129, 0.85);
       border-color: #10b981;
     }
+    #camera-snap-btn:hover {
+      background: rgba(5, 150, 105, 0.95);
+    }
+
+    /* ปุ่มสลับโหมดสัมผัส 3D */
     #touch-toggle-btn {
       position: absolute;
       top: 12px;
@@ -309,31 +419,17 @@
       padding: 6px 12px;
       font-size: 12px;
       border-radius: 20px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid #334155;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid #555;
       color: #fff;
       backdrop-filter: blur(4px);
     }
     #touch-toggle-btn.locked {
-      background: rgba(220, 38, 38, 0.85);
+      background: rgba(220, 38, 38, 0.8);
       border-color: #ef4444;
     }
 
-    #viewport-overlay-info {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      z-index: 20;
-      background: rgba(15, 23, 42, 0.85);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      color: #94a3b8;
-      border: 1px solid #334155;
-      pointer-events: none;
-    }
-
-    /* Mobile view adjustments */
+    /* Responsive Mobile Mode */
     @media (max-width: 768px) {
       body {
         flex-direction: column;
@@ -344,8 +440,8 @@
         -webkit-overflow-scrolling: touch;
       }
       #canvas-container {
-        height: 40vh;
-        min-height: 250px;
+        height: 44vh;
+        min-height: 270px;
         width: 100%;
         flex: none;
       }
@@ -356,9 +452,35 @@
         flex: none;
         overflow-y: visible;
         border-right: none;
-        border-top: 1px solid #334155;
+        border-top: 1px solid #333333;
         padding: 16px;
         padding-bottom: 40px;
+      }
+      #camera-control-bar {
+        top: 8px;
+        left: 8px;
+        gap: 4px;
+      }
+      #camera-toggle-btn,
+      #camera-snap-btn {
+        padding: 5px 9px;
+        font-size: 11px;
+      }
+      #touch-toggle-btn {
+        top: 8px;
+        right: 8px;
+        padding: 5px 9px;
+        font-size: 11px;
+      }
+      .adjust-btn {
+        padding: 6px 2px;
+        font-size: 11px;
+      }
+      input[type="password"],
+      input[type="text"],
+      input[type="file"],
+      textarea {
+        font-size: 16px;
       }
     }
   </style>
@@ -383,141 +505,181 @@
     </div>
 
     <button id="touch-toggle-btn" type="button">🖐️ โหมดหมุน 3D (แตะเพื่อล็อก)</button>
-
-    <div id="viewport-overlay-info">
-      <div>📐 Interactive 3D Spatial Cage & PBR Shader Preview</div>
-      <div id="viewport-dim-text">Dimension: Waiting for image analysis...</div>
-    </div>
   </div>
 
   <div id="sidebar">
-    <h1>
-      <span>3D Blueprint Architect</span>
-      <span class="badge">gemini-3.5-flash-lite</span>
-    </h1>
+    <h1>Agent 3D Builder</h1>
     
     <label for="api-key-input">Gemini API Key:</label>
     <input 
       type="password" 
       id="api-key-input" 
+      data-testid="api-key-input" 
       placeholder="ใส่ Gemini API Key ที่นี่" />
 
-    <label for="image-input-front">ภาพอ้างอิง 2D (Single Reference Image):</label>
+    <!-- แผงปรับตำแหน่งและขยายสติ๊กเกอร์หน้าตา ย้ายมาวางใต้ช่อง API Key -->
+    <div id="sticker-adjust-panel">
+      <div class="adjust-header">
+        <span>🎮 ปรับสติ๊กเกอร์หน้าตา (มองเห็นโมเดลได้ชัดเจน)</span>
+      </div>
+      <div class="adjust-grid-row">
+        <button id="stk-up-btn" class="adjust-btn" type="button">⬆️ ขึ้น</button>
+        <button id="stk-down-btn" class="adjust-btn" type="button">⬇️ ลง</button>
+        <button id="stk-left-btn" class="adjust-btn" type="button">⬅️ ซ้าย</button>
+        <button id="stk-right-btn" class="adjust-btn" type="button">➡️ ขวา</button>
+      </div>
+      <div class="adjust-grid-row">
+        <button id="stk-forward-btn" class="adjust-btn" type="button" title="ดันออกมาข้างหน้ากันจม">⏫ ดันหน้า</button>
+        <button id="stk-backward-btn" class="adjust-btn" type="button" title="ดันเข้าด้านในแนบผิว">⏬ ดันลึก</button>
+        <button id="stk-scale-up-btn" class="adjust-btn" type="button">➕ ขยาย</button>
+        <button id="stk-scale-down-btn" class="adjust-btn" type="button">➖ ย่อ</button>
+      </div>
+      <div class="adjust-grid-row">
+        <button id="stk-stretch-x-plus" class="adjust-btn" type="button">↔️ กว้าง</button>
+        <button id="stk-stretch-x-minus" class="adjust-btn" type="button">🤏 แคบ</button>
+        <button id="stk-stretch-y-plus" class="adjust-btn" type="button">↕️ สูง</button>
+        <button id="stk-stretch-y-minus" class="adjust-btn" type="button">🤏 สั้น</button>
+      </div>
+    </div>
+
+    <!-- Multi-View Image Reference -->
+    <label for="image-input-front">1. ภาพมุมหน้า (Front View Reference):</label>
     <input 
       type="file" 
       id="image-input-front" 
+      data-testid="image-input-front" 
       accept="image/*" />
 
     <div id="uploaded-preview-container-front">
-      <img id="uploaded-image-preview-front" alt="2D Reference Preview" />
-      <button id="remove-image-btn-front" type="button">❌ ลบรูปภาพ</button>
+      <img id="uploaded-image-preview-front" alt="Front Preview" />
+      <button id="remove-image-btn-front" type="button">❌ ลบรูปภาพมุมหน้า</button>
     </div>
 
-    <label for="prompt-input">User Prompt / Custom Request (ตัวเลือกเสริม):</label>
+    <label for="image-input-side">2. ภาพมุมข้าง (Side View Reference - ตัวเลือกเสริม):</label>
+    <input 
+      type="file" 
+      id="image-input-side" 
+      data-testid="image-input-side" 
+      accept="image/*" />
+
+    <div id="uploaded-preview-container-side">
+      <img id="uploaded-image-preview-side" alt="Side Preview" />
+      <button id="remove-image-btn-side" type="button">❌ ลบรูปภาพมุมข้าง</button>
+    </div>
+
+    <label for="prompt-input">คำอธิบายโมเดล 3D (หรือคำสั่งปรับปรุงต่อยอด):</label>
     <textarea 
       id="prompt-input" 
-      placeholder="เช่น เน้นรอยขีดข่วนโลหะ, ระบุความละเอียดสำหรับงานเกมมือถือ หรือปล่อยว่างไว้"></textarea>
+      data-testid="prompt-input" 
+      placeholder="ตัวอย่าง: Firey บอลไฟกลมอ้วน 3D หรือ หุ่นยนต์แมวอวกาศ"></textarea>
 
-    <button id="analyze-btn" type="button">🚀 วิเคราะห์โครงสร้าง 3D Blueprint</button>
-    <button id="export-json-btn" type="button" disabled>💾 ดาวน์โหลด Blueprint (.json)</button>
-    <button id="snap-png-btn" type="button" disabled>📸 บันทึกภาพ 3D Viewport (PNG)</button>
-    <button id="reset-btn" type="button">🧹 ล้างข้อมูลทั้งหมด</button>
+    <!-- Face Sticker / Decal Panel -->
+    <div id="sticker-container">
+      <div id="sticker-title">😊 สติกเกอร์หน้าตาแนบผิว (Face Decal):</div>
+      <div class="sticker-grid">
+        <button id="sticker-happy-btn" class="sticker-btn" type="button" disabled>😄 BFDI ยิ้มกว้าง</button>
+        <button id="sticker-shock-btn" class="sticker-btn" type="button" disabled>😮 BFDI ตกใจ</button>
+        <button id="sticker-angry-btn" class="sticker-btn" type="button" disabled>😠 BFDI โกรธ</button>
+        <button id="sticker-cute-btn" class="sticker-btn" type="button" disabled>🥺 ตาหวานอนิเมะ</button>
+        <button id="sticker-remove-btn" class="sticker-btn" type="button" disabled>❌ ลบสติกเกอร์หน้าตา</button>
+      </div>
+    </div>
 
-    <div id="app-status" data-status="idle">Status: Idle</div>
+    <!-- Smart Pose Library -->
+    <div id="pose-container">
+      <div id="pose-title">🏃 Smart Pose Library (จัดท่าทางอัตโนมัติ):</div>
+      <div class="pose-grid">
+        <button id="pose-stand-btn" class="pose-btn" type="button" disabled>🧍 ยืนตรง</button>
+        <button id="pose-run-btn" class="pose-btn" type="button" disabled>🏃 ท่าวิ่ง</button>
+        <button id="pose-sit-btn" class="pose-btn" type="button" disabled>🪑 ท่านั่ง</button>
+        <button id="pose-wave-btn" class="pose-btn" type="button" disabled>👋 โบกมือทักทาย</button>
+      </div>
+    </div>
 
-    <!-- Technical Blueprint Dashboard -->
-    <div id="blueprint-dashboard">
-      <div class="bp-card-title">
-        <span>📊 Technical Reconstruction Blueprint</span>
+    <!-- กล่องปรับแต่งชิ้นส่วนที่เลือก (Inspector) -->
+    <div id="inspector-container">
+      <div id="inspector-header">
+        <span>⚙️ ชิ้นส่วนที่เลือก</span>
+        <span id="selected-part-id">-</span>
       </div>
+      <div class="inspector-row">
+        <span>สีชิ้นส่วน:</span>
+        <input type="color" id="part-color-input" value="#cccccc" />
+      </div>
+      <div class="inspector-row">
+        <span>Roughness (ด้าน): <strong id="roughness-val">0.65</strong></span>
+        <input type="range" id="part-roughness-input" min="0" max="1" step="0.05" value="0.65" />
+      </div>
+      <div class="inspector-row">
+        <span>Metalness (โลหะ): <strong id="metalness-val">0.05</strong></span>
+        <input type="range" id="part-metalness-input" min="0" max="1" step="0.05" value="0.05" />
+      </div>
+      <button id="delete-part-btn" type="button">🗑️ ลบชิ้นส่วนนี้ออกจากโมเดล</button>
+    </div>
 
-      <div class="bp-row">
-        <span class="bp-label">วัตถุหลัก (Subject):</span>
-        <span id="bp-subject" class="bp-value">-</span>
-      </div>
-      <div class="bp-row">
-        <span class="bp-label">การจำแนกรูปทรง:</span>
-        <span id="bp-classification" class="bp-value">-</span>
-      </div>
-      <div class="bp-row">
-        <span class="bp-label">ขนาดจริงประเมิน (X, Y, Z):</span>
-        <span id="bp-dimensions" class="bp-value">-</span>
-      </div>
-      <div class="bp-row">
-        <span class="bp-label">แกนสมมาตร / จุดยึด:</span>
-        <span id="bp-symmetry" class="bp-value">-</span>
-      </div>
-      <div class="bp-row">
-        <span class="bp-label">LOD0 High-Poly:</span>
-        <span id="bp-lod0" class="bp-value">-</span>
-      </div>
-      <div class="bp-row">
-        <span class="bp-label">LOD1 Mobile Optimized:</span>
-        <span id="bp-lod1" class="bp-value">-</span>
-      </div>
+    <div id="history-box">
+      <div id="history-box-title">ลำดับการปรับปรุงคำสั่งสะสม (Iterative History):</div>
+      <ol id="history-list"></ol>
+    </div>
 
-      <div class="bp-card-title" style="margin-top: 6px;">
-        <span>🎨 PBR Material Layer</span>
-      </div>
-      <div class="bp-row">
-        <span class="bp-label">Roughness / Metallic:</span>
-        <span id="bp-rough-metal" class="bp-value">-</span>
-      </div>
-      <div class="bp-row">
-        <span class="bp-label">Normal Detail:</span>
-        <span id="bp-normal" class="bp-value">-</span>
-      </div>
-      <div class="bp-label">จานสี Albedo Color Palette:</div>
-      <div id="bp-palette-container" class="palette-box"></div>
+    <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
+    <button id="snap-png-btn" data-testid="snap-png-btn" disabled>📸 เซฟรูปภาพโมเดล (PNG)</button>
+    <button id="undo-btn" data-testid="undo-btn" disabled>↩️ ย้อนกลับทรงก่อนหน้า</button>
+    <button id="reset-btn" data-testid="reset-btn">🧹 ล้างคำสั่ง / เริ่มโมเดลใหม่</button>
+    <button id="export-glb-btn" data-testid="export-glb-btn" disabled>Export GLB</button>
+    
+    <div id="app-status" data-testid="app-status" data-status="idle">Status: Idle</div>
+    
+    <a id="download-link" data-testid="download-link" style="display: none;" download="model.glb">
+      Download Model (.glb)
+    </a>
 
-      <div class="bp-card-title" style="margin-top: 6px;">
-        <span>🤖 TripoSR / NeRF Diffusion Prompt</span>
-        <button id="copy-diffusion-btn" class="btn-copy" type="button">คัดลอก</button>
-      </div>
-      <div id="bp-diffusion-prompt" class="prompt-box">-</div>
-
-      <div class="bp-card-title" style="margin-top: 4px;">
-        <span>⛔ Negative Prompt</span>
-        <button id="copy-negative-btn" class="btn-copy" type="button">คัดลอก</button>
-      </div>
-      <div id="bp-negative-prompt" class="prompt-box">-</div>
+    <div id="preview-container">
+      <label>รูปภาพพรีวิว (Snapshot Image):</label>
+      <img id="preview-image" data-testid="preview-image" alt="3D Model Preview" />
+      <a id="download-image-btn" data-testid="download-image-btn" download="model-preview.png">
+        Download Image (.png)
+      </a>
     </div>
   </div>
 
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
-    // 1. ลงทะเบียน Service Worker
+    // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then((reg) => console.log('SW Registered:', reg.scope))
-          .catch((err) => console.error('SW Error:', err));
+          .then((registration) => {
+            console.log('ServiceWorker registered with scope:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('ServiceWorker registration failed:', error);
+          });
       });
     }
 
-    // 2. ตั้งค่า Three.js Scene สำหรับแสดงผล 3D Blueprint & PBR Shader Preview
+    // 2. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer และ alpha สำหรับพื้นหลังโปร่งใส
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0b0f19);
+    scene.background = new THREE.Color(0x1a1a1a);
 
-    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.05, 100);
-    camera.position.set(2.5, 2.2, 3.2);
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(5, 5, 7);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
     container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // ปุ่มล็อกมุมมองบนมือถือ
     const touchToggleBtn = document.getElementById('touch-toggle-btn');
     let isTouchLocked = false;
+
     touchToggleBtn.addEventListener('click', () => {
       isTouchLocked = !isTouchLocked;
       if (isTouchLocked) {
@@ -531,28 +693,27 @@
       }
     });
 
-    // แสงสตูดิโอระดับ Neutral Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 0.5);
-    hemiLight.position.set(0, 10, 0);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
+    hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    keyLight.position.set(5, 8, 5);
-    keyLight.castShadow = true;
-    scene.add(keyLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(10, 15, 10);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
 
-    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.6);
-    fillLight.position.set(-5, 3, -5);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    fillLight.position.set(0, 2, 10);
     scene.add(fillLight);
 
-    const gridHelper = new THREE.GridHelper(6, 12, 0x0284c7, 0x1e293b);
+    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
     scene.add(gridHelper);
 
-    const blueprintGroup = new THREE.Group();
-    scene.add(blueprintGroup);
+    const modelGroup = new THREE.Group();
+    scene.add(modelGroup);
 
     function updateViewport() {
       const width = container.clientWidth;
@@ -563,15 +724,19 @@
         renderer.setSize(width, height);
       }
     }
+
     window.addEventListener('resize', updateViewport);
 
     function animate() {
       requestAnimationFrame(animate);
-      if (controls.enabled) controls.update();
+      if (controls.enabled) {
+        controls.update();
+      }
       renderer.render(scene, camera);
     }
     animate();
 
+    // ฟังก์ชันจัดการล้างหน่วยความจำแบบ Recursive เพื่อรองรับ Hierarchy
     function disposeObject(obj) {
       if (obj.children) {
         while (obj.children.length > 0) {
@@ -581,75 +746,808 @@
       }
       if (obj.geometry) obj.geometry.dispose();
       if (obj.material) {
-        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-        else obj.material.dispose();
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach(m => {
+            if (m.map) m.map.dispose();
+            m.dispose();
+          });
+        } else {
+          if (obj.material.map) obj.material.map.dispose();
+          obj.material.dispose();
+        }
       }
     }
 
+    // 3. ฟังก์ชันจัดกล้องให้อยู่ตรงกลางวัตถุอัตโนมัติ
     function fitCameraToObject(object) {
       const box = new THREE.Box3().setFromObject(object);
       if (box.isEmpty()) return;
 
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z, 0.5);
+      const maxDim = Math.max(size.x, size.y, size.z);
       const fov = camera.fov * (Math.PI / 180);
-      let cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 2.0;
+      let cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+      cameraDistance *= 2.2;
 
-      camera.position.set(center.x + cameraDistance * 0.8, center.y + cameraDistance * 0.6, center.z + cameraDistance);
+      camera.position.set(center.x + cameraDistance * 0.7, center.y + cameraDistance * 0.7, center.z + cameraDistance);
       camera.lookAt(center);
       controls.target.copy(center);
       controls.update();
     }
 
-    // 3. UI Elements & State
+    // ฟังก์ชันอัปเดตรูปพรีวิว Snapshot
+    function updatePreviewSnapshot() {
+      renderer.render(scene, camera);
+      const dataUrl = renderer.domElement.toDataURL('image/png');
+      const previewContainer = document.getElementById('preview-container');
+      const previewImg = document.getElementById('preview-image');
+      const downloadImgBtn = document.getElementById('download-image-btn');
+
+      previewImg.src = dataUrl;
+      downloadImgBtn.href = dataUrl;
+      downloadImgBtn.download = 'model-preview.png';
+      previewContainer.style.display = 'flex';
+    }
+
+    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ Ultra-Smooth High-Fidelity Geometry
+    function renderModel(spec) {
+      deselectPart();
+
+      while (modelGroup.children.length > 0) {
+        const obj = modelGroup.children[0];
+        disposeObject(obj);
+        modelGroup.remove(obj);
+      }
+
+      const stickerPanel = document.getElementById('sticker-adjust-panel');
+      if (stickerPanel) stickerPanel.style.display = 'none';
+
+      if (!spec.objects || !Array.isArray(spec.objects)) return;
+
+      const objectMap = new Map();
+
+      spec.objects.forEach((item, index) => {
+        let geometry;
+        const p = item.parameters || {};
+
+        if (item.type === 'box') {
+          geometry = new THREE.BoxGeometry(p.width || 1, p.height || 1, p.depth || 1);
+        } else if (item.type === 'cylinder') {
+          geometry = new THREE.CylinderGeometry(
+            p.radiusTop !== undefined ? p.radiusTop : 0.5,
+            p.radiusBottom !== undefined ? p.radiusBottom : 0.5,
+            p.height || 1,
+            p.radialSegments || 48
+          );
+        } else if (item.type === 'sphere') {
+          geometry = new THREE.SphereGeometry(
+            p.radius || 0.5,
+            p.widthSegments || 48,
+            p.heightSegments || 32
+          );
+        } else if (item.type === 'cone') {
+          geometry = new THREE.ConeGeometry(
+            p.radius || 0.5,
+            p.height || 1,
+            p.radialSegments || 48
+          );
+        } else if (item.type === 'torus') {
+          geometry = new THREE.TorusGeometry(
+            p.radius || 0.5,
+            p.tube || 0.2,
+            p.radialSegments || 32,
+            p.tubularSegments || 48
+          );
+        } else if (item.type === 'capsule') {
+          geometry = new THREE.CapsuleGeometry(
+            p.radius || 0.5,
+            p.length || 1,
+            p.capSubdivisions || 16,
+            p.radialSegments || 32
+          );
+        } else if (item.type === 'lathe') {
+          const rawPoints = (p.points && Array.isArray(p.points) && p.points.length > 1) ? p.points : [[0, 0], [0.5, 0.5], [0.3, 1], [0, 1]];
+          const points = rawPoints.map(pt => new THREE.Vector2(Math.max(0, pt[0]), pt[1]));
+          geometry = new THREE.LatheGeometry(points, p.segments || 48);
+        } else if (item.type === 'extrude') {
+          const shape = new THREE.Shape();
+          const pts = (p.shape && Array.isArray(p.shape) && p.shape.length >= 3) ? p.shape : [[0, 0], [1, 0], [0.5, 1]];
+          shape.moveTo(pts[0][0], pts[0][1]);
+          for (let i = 1; i < pts.length; i++) {
+            shape.lineTo(pts[i][0], pts[i][1]);
+          }
+          shape.closePath();
+
+          const extrudeSettings = {
+            depth: p.depth !== undefined ? p.depth : 0.35,
+            bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
+            bevelSegments: p.bevelSegments || 6,
+            steps: 2,
+            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.05,
+            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.05
+          };
+          geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        } else if (item.type === 'tube') {
+          const rawPath = (p.path && Array.isArray(p.path) && p.path.length > 1)
+            ? p.path.map(pt => new THREE.Vector3(...pt))
+            : [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0)];
+          const curve = new THREE.CatmullRomCurve3(rawPath);
+          geometry = new THREE.TubeGeometry(
+            curve,
+            p.tubularSegments || 48,
+            p.radius || 0.035,
+            p.radialSegments || 16,
+            p.closed || false
+          );
+        } else if (item.type === 'plane') {
+          geometry = new THREE.PlaneGeometry(p.width || 1, p.height || 1);
+        } else if (item.type === 'dodecahedron') {
+          geometry = new THREE.DodecahedronGeometry(p.radius || 0.5, p.detail || 0);
+        } else if (item.type === 'icosahedron') {
+          geometry = new THREE.IcosahedronGeometry(p.radius || 0.5, p.detail || 0);
+        }
+
+        if (geometry) {
+          const material = new THREE.MeshStandardMaterial({
+            color: item.color || '#cccccc',
+            metalness: item.metalness !== undefined ? item.metalness : 0.05,
+            roughness: item.roughness !== undefined ? item.roughness : 0.65,
+            side: item.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          if (item.position && Array.isArray(item.position)) mesh.position.set(...item.position);
+          if (item.rotation && Array.isArray(item.rotation)) mesh.rotation.set(...item.rotation);
+          if (item.scale && Array.isArray(item.scale)) mesh.scale.set(...item.scale);
+          
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+
+          const itemId = item.id || `obj_${index}`;
+          mesh.userData = { id: itemId };
+          objectMap.set(itemId, mesh);
+
+          // รองรับระบบลำดับชั้น Parent-Child
+          if (item.parent && objectMap.has(item.parent)) {
+            objectMap.get(item.parent).add(mesh);
+          } else {
+            modelGroup.add(mesh);
+          }
+        }
+      });
+
+      fitCameraToObject(modelGroup);
+      updatePreviewSnapshot();
+    }
+
+    // 5. จัดการ Element, สถานะสะสม และการเชื่อมต่อ Gemini API
     const apiKeyInput = document.getElementById('api-key-input');
+    
+    // Front Image
     const imageInputFront = document.getElementById('image-input-front');
     const uploadedPreviewContainerFront = document.getElementById('uploaded-preview-container-front');
     const uploadedImagePreviewFront = document.getElementById('uploaded-image-preview-front');
     const removeImageBtnFront = document.getElementById('remove-image-btn-front');
+
+    // Side Image
+    const imageInputSide = document.getElementById('image-input-side');
+    const uploadedPreviewContainerSide = document.getElementById('uploaded-preview-container-side');
+    const uploadedImagePreviewSide = document.getElementById('uploaded-image-preview-side');
+    const removeImageBtnSide = document.getElementById('remove-image-btn-side');
+
     const promptInput = document.getElementById('prompt-input');
-    const analyzeBtn = document.getElementById('analyze-btn');
-    const exportJsonBtn = document.getElementById('export-json-btn');
+    const generateBtn = document.getElementById('generate-btn');
     const snapPngBtn = document.getElementById('snap-png-btn');
+    const undoBtn = document.getElementById('undo-btn');
     const resetBtn = document.getElementById('reset-btn');
+    const exportBtn = document.getElementById('export-glb-btn');
     const appStatus = document.getElementById('app-status');
+    const downloadLink = document.getElementById('download-link');
+    const previewContainer = document.getElementById('preview-container');
+    const historyBox = document.getElementById('history-box');
+    const historyList = document.getElementById('history-list');
 
-    // Dashboard Elements
-    const blueprintDashboard = document.getElementById('blueprint-dashboard');
-    const bpSubject = document.getElementById('bp-subject');
-    const bpClassification = document.getElementById('bp-classification');
-    const bpDimensions = document.getElementById('bp-dimensions');
-    const bpSymmetry = document.getElementById('bp-symmetry');
-    const bpLod0 = document.getElementById('bp-lod0');
-    const bpLod1 = document.getElementById('bp-lod1');
-    const bpRoughMetal = document.getElementById('bp-rough-metal');
-    const bpNormal = document.getElementById('bp-normal');
-    const bpPaletteContainer = document.getElementById('bp-palette-container');
-    const bpDiffusionPrompt = document.getElementById('bp-diffusion-prompt');
-    const bpNegativePrompt = document.getElementById('bp-negative-prompt');
-    const copyDiffusionBtn = document.getElementById('copy-diffusion-btn');
-    const copyNegativeBtn = document.getElementById('copy-negative-btn');
-    const viewportDimText = document.getElementById('viewport-dim-text');
-
-    // AR & Camera Elements
+    // Camera & AR Elements
     const cameraFeed = document.getElementById('camera-feed');
     const cameraToggleBtn = document.getElementById('camera-toggle-btn');
     const cameraSnapBtn = document.getElementById('camera-snap-btn');
     let isCameraMode = false;
     let cameraStream = null;
 
+    // Sticker Buttons
+    const stickerHappyBtn = document.getElementById('sticker-happy-btn');
+    const stickerShockBtn = document.getElementById('sticker-shock-btn');
+    const stickerAngryBtn = document.getElementById('sticker-angry-btn');
+    const stickerCuteBtn = document.getElementById('sticker-cute-btn');
+    const stickerRemoveBtn = document.getElementById('sticker-remove-btn');
+    const stickerButtons = [stickerHappyBtn, stickerShockBtn, stickerAngryBtn, stickerCuteBtn, stickerRemoveBtn];
+
+    // Sticker Transform Adjustment Elements (In Sidebar under API Key)
+    const stickerAdjustPanel = document.getElementById('sticker-adjust-panel');
+    const stkUpBtn = document.getElementById('stk-up-btn');
+    const stkDownBtn = document.getElementById('stk-down-btn');
+    const stkLeftBtn = document.getElementById('stk-left-btn');
+    const stkRightBtn = document.getElementById('stk-right-btn');
+    const stkForwardBtn = document.getElementById('stk-forward-btn');
+    const stkBackwardBtn = document.getElementById('stk-backward-btn');
+    const stkScaleUpBtn = document.getElementById('stk-scale-up-btn');
+    const stkScaleDownBtn = document.getElementById('stk-scale-down-btn');
+    const stkStretchXPlus = document.getElementById('stk-stretch-x-plus');
+    const stkStretchXMinus = document.getElementById('stk-stretch-x-minus');
+    const stkStretchYPlus = document.getElementById('stk-stretch-y-plus');
+    const stkStretchYMinus = document.getElementById('stk-stretch-y-minus');
+
+    // Pose Buttons
+    const poseStandBtn = document.getElementById('pose-stand-btn');
+    const poseRunBtn = document.getElementById('pose-run-btn');
+    const poseSitBtn = document.getElementById('pose-sit-btn');
+    const poseWaveBtn = document.getElementById('pose-wave-btn');
+    const poseButtons = [poseStandBtn, poseRunBtn, poseSitBtn, poseWaveBtn];
+
+    // Inspector Elements
+    const inspectorContainer = document.getElementById('inspector-container');
+    const selectedPartId = document.getElementById('selected-part-id');
+    const partColorInput = document.getElementById('part-color-input');
+    const partRoughnessInput = document.getElementById('part-roughness-input');
+    const partMetalnessInput = document.getElementById('part-metalness-input');
+    const roughnessVal = document.getElementById('roughness-val');
+    const metalnessVal = document.getElementById('metalness-val');
+    const deletePartBtn = document.getElementById('delete-part-btn');
+
+    let currentSpec = null;
+    let promptSession = [];
+    const modelHistory = [];
+    let selectedMesh = null;
+
     let frontImageBase64 = null;
     let frontImageMimeType = null;
-    let currentBlueprint = null;
+    let sideImageBase64 = null;
+    let sideImageMimeType = null;
 
-    // Load / Save API Key
+    function updateActionButtonsState() {
+      const hasModel = currentSpec !== null;
+      poseButtons.forEach(btn => btn.disabled = !hasModel);
+      stickerButtons.forEach(btn => btn.disabled = !hasModel);
+      snapPngBtn.disabled = !hasModel;
+      exportBtn.disabled = !hasModel;
+
+      const hasSticker = modelGroup.getObjectByName('face_sticker') !== null;
+      if (!hasSticker && stickerAdjustPanel) {
+        stickerAdjustPanel.style.display = 'none';
+      }
+    }
+
+    function updateHistoryUI() {
+      historyList.innerHTML = '';
+      if (promptSession.length === 0) {
+        historyBox.style.display = 'none';
+        generateBtn.textContent = 'Generate 3D';
+      } else {
+        historyBox.style.display = 'flex';
+        promptSession.forEach((text) => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          historyList.appendChild(li);
+        });
+        generateBtn.textContent = 'Generate 3D (ต่อยอดจากเดิม)';
+      }
+    }
+
+    function updateUndoButtonState() {
+      undoBtn.disabled = modelHistory.length <= 1;
+    }
+
+    // ฟังก์ชันเลือกชิ้นส่วน 3D และเปิด Inspector
+    function selectPart(mesh) {
+      if (!mesh || !mesh.userData || !mesh.userData.id) return;
+      selectedMesh = mesh;
+      
+      const partId = mesh.userData.id;
+      selectedPartId.textContent = partId;
+      inspectorContainer.style.display = 'flex';
+
+      if (mesh.material && mesh.material.color) {
+        partColorInput.value = '#' + mesh.material.color.getHexString();
+      }
+      if (mesh.material && mesh.material.roughness !== undefined) {
+        partRoughnessInput.value = mesh.material.roughness;
+        roughnessVal.textContent = mesh.material.roughness.toFixed(2);
+      }
+      if (mesh.material && mesh.material.metalness !== undefined) {
+        partMetalnessInput.value = mesh.material.metalness;
+        metalnessVal.textContent = mesh.material.metalness.toFixed(2);
+      }
+    }
+
+    // ฟังก์ชันปลดการเลือกชิ้นส่วน
+    function deselectPart() {
+      selectedMesh = null;
+      inspectorContainer.style.display = 'none';
+    }
+
+    // Inspector Event Listeners
+    partColorInput.addEventListener('input', (e) => {
+      if (!selectedMesh || !currentSpec) return;
+      const newColor = e.target.value;
+      if (selectedMesh.material) {
+        selectedMesh.material.color.set(newColor);
+      }
+      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+      if (targetObj) targetObj.color = newColor;
+      updatePreviewSnapshot();
+    });
+
+    partRoughnessInput.addEventListener('input', (e) => {
+      if (!selectedMesh || !currentSpec) return;
+      const val = parseFloat(e.target.value);
+      roughnessVal.textContent = val.toFixed(2);
+      if (selectedMesh.material) {
+        selectedMesh.material.roughness = val;
+      }
+      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+      if (targetObj) targetObj.roughness = val;
+    });
+
+    partMetalnessInput.addEventListener('input', (e) => {
+      if (!selectedMesh || !currentSpec) return;
+      const val = parseFloat(e.target.value);
+      metalnessVal.textContent = val.toFixed(2);
+      if (selectedMesh.material) {
+        selectedMesh.material.metalness = val;
+      }
+      const targetObj = currentSpec.objects.find(o => o.id === selectedMesh.userData.id);
+      if (targetObj) targetObj.metalness = val;
+    });
+
+    deletePartBtn.addEventListener('click', () => {
+      if (!selectedMesh || !currentSpec) return;
+      const idToDelete = selectedMesh.userData.id;
+
+      currentSpec.objects = currentSpec.objects.filter(o => o.id !== idToDelete && o.parent !== idToDelete);
+      deselectPart();
+      renderModel(currentSpec);
+      setStatus('ready', `ลบชิ้นส่วน "${idToDelete}" สำเร็จ`);
+    });
+
+    // Raycaster ตรวจจับการคลิกเลือกชิ้นส่วนบน Canvas
+    let pointerDownCoord = { x: 0, y: 0 };
+
+    container.addEventListener('pointerdown', (e) => {
+      pointerDownCoord = { x: e.clientX, y: e.clientY };
+    });
+
+    container.addEventListener('pointerup', (e) => {
+      if (e.target !== renderer.domElement) return;
+      const dist = Math.hypot(e.clientX - pointerDownCoord.x, e.clientY - pointerDownCoord.y);
+      if (dist > 5) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(modelGroup.children, true);
+
+      if (intersects.length > 0) {
+        let hitObj = intersects[0].object;
+        while (hitObj && !hitObj.userData?.id && hitObj.parent && hitObj.parent !== modelGroup) {
+          hitObj = hitObj.parent;
+        }
+        if (hitObj && hitObj.userData?.id) {
+          selectPart(hitObj);
+        }
+      } else {
+        deselectPart();
+      }
+    });
+
+    // ==========================================
+    // ปุ่ม Snap ดาวน์โหลดรูปภาพ PNG ทันที
+    // ==========================================
+    snapPngBtn.addEventListener('click', () => {
+      if (!currentSpec) {
+        setStatus('error', 'ไม่มีโมเดล 3D ให้บันทึกรูปภาพ');
+        return;
+      }
+
+      deselectPart();
+      renderer.render(scene, camera);
+      const dataUrl = renderer.domElement.toDataURL('image/png');
+
+      const tempLink = document.createElement('a');
+      tempLink.href = dataUrl;
+      tempLink.download = `3d-model-${Date.now()}.png`;
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
+
+      setStatus('ready', '📸 เซฟรูปภาพโมเดล 3D (PNG) ลงเครื่องเรียบร้อยแล้ว!');
+    });
+
+    // ==========================================
+    // ระบบเปิดกล้องสภาพแวดล้อมจริง และถ่ายรูป AR
+    // ==========================================
+    async function startCamera() {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+        cameraFeed.srcObject = cameraStream;
+        await cameraFeed.play();
+        cameraFeed.style.display = 'block';
+
+        // ปรับพื้นหลัง 3D เป็นโปร่งใส และซ่อน Grid เพื่อผสานกับภาพกล้องจริง
+        scene.background = null;
+        renderer.setClearColor(0x000000, 0);
+        gridHelper.visible = false;
+
+        isCameraMode = true;
+        cameraToggleBtn.textContent = '❌ ปิดกล้องจริง';
+        cameraToggleBtn.classList.add('active-camera');
+        cameraSnapBtn.style.display = 'inline-block';
+        setStatus('ready', 'เปิดกล้องสภาพแวดล้อมจริงแล้ว! หมุนหามุมมองที่ต้องการ แล้วกด "ถ่ายรูป AR" ได้ทันที');
+      } catch (err) {
+        setStatus('error', 'ไม่สามารถเปิดกล้องได้: ' + err.message);
+      }
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      cameraFeed.srcObject = null;
+      cameraFeed.style.display = 'none';
+
+      // คืนค่าพื้นหลังฉากสตูดิโอ 3D สีเข้ม
+      scene.background = new THREE.Color(0x1a1a1a);
+      renderer.setClearColor(0x1a1a1a, 1);
+      gridHelper.visible = true;
+
+      isCameraMode = false;
+      cameraToggleBtn.textContent = '📷 โหมดกล้องจริง';
+      cameraToggleBtn.classList.remove('active-camera');
+      cameraSnapBtn.style.display = 'none';
+      setStatus('idle', 'ปิดโหมดกล้องจริงแล้ว');
+    }
+
+    cameraToggleBtn.addEventListener('click', () => {
+      if (!isCameraMode) {
+        startCamera();
+      } else {
+        stopCamera();
+      }
+    });
+
+    cameraSnapBtn.addEventListener('click', () => {
+      if (!cameraFeed || !cameraFeed.videoWidth) {
+        setStatus('error', 'ภาพกล้องยังไม่พร้อมสำหรับการถ่ายรูป');
+        return;
+      }
+
+      deselectPart();
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      const captureCanvas = document.createElement('canvas');
+      captureCanvas.width = width;
+      captureCanvas.height = height;
+      const ctx = captureCanvas.getContext('2d');
+
+      // คำนวณตัดสัดส่วนวิดีโอ (Aspect Ratio Cover) ให้พอดีกับหน้าจอ
+      const vWidth = cameraFeed.videoWidth;
+      const vHeight = cameraFeed.videoHeight;
+      const videoAspect = vWidth / vHeight;
+      const containerAspect = width / height;
+
+      let sx = 0, sy = 0, sWidth = vWidth, sHeight = vHeight;
+      if (videoAspect > containerAspect) {
+        sHeight = vHeight;
+        sWidth = vHeight * containerAspect;
+        sx = (vWidth - sWidth) / 2;
+        sy = 0;
+      } else {
+        sWidth = vWidth;
+        sHeight = vWidth / containerAspect;
+        sx = 0;
+        sy = (vHeight - sHeight) / 2;
+      }
+
+      // 1. วาดเฟรมกล้องสดลงบนเลเยอร์พื้นหลัง
+      ctx.drawImage(cameraFeed, sx, sy, sWidth, sHeight, 0, 0, width, height);
+
+      // 2. เรนเดอร์ Three.js 3D ล่าสุดและวาดทับด้านบน
+      renderer.render(scene, camera);
+      ctx.drawImage(renderer.domElement, 0, 0, width, height);
+
+      // 3. ส่งออกภาพถ่ายรวม (.png)
+      const dataUrl = captureCanvas.toDataURL('image/png');
+      const previewImg = document.getElementById('preview-image');
+      const downloadImgBtn = document.getElementById('download-image-btn');
+
+      previewImg.src = dataUrl;
+      downloadImgBtn.href = dataUrl;
+      downloadImgBtn.download = `ar-camera-${Date.now()}.png`;
+      previewContainer.style.display = 'flex';
+      previewContainer.scrollIntoView({ behavior: 'smooth' });
+
+      // บันทึกลงเครื่องทันที
+      const instantLink = document.createElement('a');
+      instantLink.href = dataUrl;
+      instantLink.download = `ar-camera-${Date.now()}.png`;
+      document.body.appendChild(instantLink);
+      instantLink.click();
+      document.body.removeChild(instantLink);
+
+      setStatus('ready', 'ถ่ายรูป AR รวมโมเดล 3D กับสภาพแวดล้อมจริงเรียบร้อยแล้ว!');
+    });
+
+    // ==========================================
+    // ระบบสติกเกอร์หน้าตาแนบผิว 2D Decal Canvas
+    // ==========================================
+    function createFaceCanvas(type) {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, 512, 512);
+
+      if (type === 'bfdi_happy') {
+        // ตาขีดรีสไตล์ BFDI
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.ellipse(170, 190, 16, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(342, 190, 16, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ปากยิ้มกว้างเห็นฟันขาวแบบ BFDI
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(256, 250, 100, 0.15 * Math.PI, 0.85 * Math.PI, false);
+        ctx.closePath();
+        ctx.fillStyle = '#991b1b';
+        ctx.fill();
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
+
+        // ฟันขาวด้านบน
+        ctx.clip();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(150, 250, 212, 35);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(150, 250, 212, 35);
+        ctx.restore();
+
+      } else if (type === 'bfdi_shock') {
+        // ตาโตตกใจ
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(170, 180, 26, 0, Math.PI * 2);
+        ctx.arc(342, 180, 26, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ปากอ้ากลมรูปตัว O
+        ctx.beginPath();
+        ctx.ellipse(256, 300, 48, 62, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+
+      } else if (type === 'bfdi_angry') {
+        // คิ้วเฉียงโกรธ
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(130, 150);
+        ctx.lineTo(210, 190);
+        ctx.moveTo(382, 150);
+        ctx.lineTo(302, 190);
+        ctx.stroke();
+
+        // ลูกตาดำ
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.ellipse(175, 210, 16, 24, 0, 0, Math.PI * 2);
+        ctx.ellipse(337, 210, 16, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ปากกัดฟันโกรธ
+        ctx.beginPath();
+        ctx.roundRect(170, 290, 172, 45, 10);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = 10;
+        ctx.stroke();
+
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(170, 312);
+        ctx.lineTo(342, 312);
+        ctx.moveTo(215, 290);
+        ctx.lineTo(215, 335);
+        ctx.moveTo(256, 290);
+        ctx.lineTo(256, 335);
+        ctx.moveTo(297, 290);
+        ctx.lineTo(297, 335);
+        ctx.stroke();
+
+      } else if (type === 'cute') {
+        // ตากลมโตประกายอนิเมะ
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.ellipse(170, 190, 36, 48, 0, 0, Math.PI * 2);
+        ctx.ellipse(342, 190, 36, 48, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // แววตาสีขาว
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(160, 175, 14, 0, Math.PI * 2);
+        ctx.arc(332, 175, 14, 0, Math.PI * 2);
+        ctx.arc(180, 205, 8, 0, Math.PI * 2);
+        ctx.arc(352, 205, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // แก้มชมพูระเรื่อ
+        ctx.fillStyle = 'rgba(244, 114, 182, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(135, 240, 25, 14, 0, 0, Math.PI * 2);
+        ctx.ellipse(377, 240, 25, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ปากยิ้มเล็กน่ารัก
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(256, 260, 24, 0.1 * Math.PI, 0.9 * Math.PI, false);
+        ctx.stroke();
+      }
+
+      return c;
+    }
+
+    function applyFaceSticker(type) {
+      if (!currentSpec) {
+        setStatus('error', 'กรุณาสร้างโมเดล 3D ก่อนจึงจะแปะสติกเกอร์หน้าตาได้');
+        return;
+      }
+
+      // ลบสติกเกอร์เดิมออกก่อน
+      const existingSticker = modelGroup.getObjectByName('face_sticker');
+      if (existingSticker) {
+        disposeObject(existingSticker);
+        modelGroup.remove(existingSticker);
+      }
+
+      if (type === 'remove') {
+        stickerAdjustPanel.style.display = 'none';
+        setStatus('ready', 'ลบสติกเกอร์หน้าตาเรียบร้อย');
+        updatePreviewSnapshot();
+        return;
+      }
+
+      // คำนวณ Bounding Box ของโมเดลเพื่อแนบสติกเกอร์ไว้ที่ผิวหน้าสุด
+      const box = new THREE.Box3().setFromObject(modelGroup);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+
+      const stickerWidth = Math.max(size.x * 0.75, 0.6);
+      const stickerHeight = stickerWidth;
+      const stickerGeometry = new THREE.PlaneGeometry(stickerWidth, stickerHeight);
+
+      const faceCanvas = createFaceCanvas(type);
+      const faceTexture = new THREE.CanvasTexture(faceCanvas);
+      faceTexture.needsUpdate = true;
+
+      const stickerMaterial = new THREE.MeshStandardMaterial({
+        map: faceTexture,
+        transparent: true,
+        alphaTest: 0.05,
+        polygonOffset: true,
+        polygonOffsetFactor: -4,
+        polygonOffsetUnits: -4,
+        roughness: 0.5,
+        metalness: 0.0,
+        side: THREE.DoubleSide
+      });
+
+      const stickerMesh = new THREE.Mesh(stickerGeometry, stickerMaterial);
+      stickerMesh.name = 'face_sticker';
+      stickerMesh.userData = { id: 'face_sticker' };
+
+      // ตั้งตำแหน่งเริ่มต้น: ขยับแกน Y ขึ้นไปด้านบนช่วงหัว (center.y + 35% ของความสูงโมเดล)
+      stickerMesh.position.set(center.x, center.y + size.y * 0.35, box.max.z + 0.03);
+      modelGroup.add(stickerMesh);
+
+      // แสดงแผงปรับแต่งตำแหน่งและสัดส่วนใน Sidebar (ใต้ช่อง API Key)
+      stickerAdjustPanel.style.display = 'flex';
+      setStatus('ready', `แปะสติกเกอร์หน้าตาแล้ว! ปรับเลื่อนหรือย่อขยายที่แผงใต้ช่อง API Key ได้ทันที`);
+      updatePreviewSnapshot();
+    }
+
+    // ฟังก์ชันจัดการขยับตำแหน่งและปรับสเกลของสติ๊กเกอร์หน้าตา
+    function adjustSticker(action) {
+      const sticker = modelGroup.getObjectByName('face_sticker');
+      if (!sticker) return;
+
+      const box = new THREE.Box3().setFromObject(modelGroup);
+      const size = box.getSize(new THREE.Vector3());
+      const moveStep = Math.max(size.y * 0.04, 0.05);
+
+      if (action === 'up') {
+        sticker.position.y += moveStep;
+      } else if (action === 'down') {
+        sticker.position.y -= moveStep;
+      } else if (action === 'left') {
+        sticker.position.x -= moveStep;
+      } else if (action === 'right') {
+        sticker.position.x += moveStep;
+      } else if (action === 'forward') {
+        sticker.position.z += 0.03;
+      } else if (action === 'backward') {
+        sticker.position.z -= 0.03;
+      } else if (action === 'scale_up') {
+        sticker.scale.multiplyScalar(1.1);
+      } else if (action === 'scale_down') {
+        sticker.scale.multiplyScalar(0.9);
+      } else if (action === 'stretch_x_plus') {
+        sticker.scale.x *= 1.1;
+      } else if (action === 'stretch_x_minus') {
+        sticker.scale.x *= 0.9;
+      } else if (action === 'stretch_y_plus') {
+        sticker.scale.y *= 1.1;
+      } else if (action === 'stretch_y_minus') {
+        sticker.scale.y *= 0.9;
+      }
+
+      updatePreviewSnapshot();
+    }
+
+    stkUpBtn.addEventListener('click', () => adjustSticker('up'));
+    stkDownBtn.addEventListener('click', () => adjustSticker('down'));
+    stkLeftBtn.addEventListener('click', () => adjustSticker('left'));
+    stkRightBtn.addEventListener('click', () => adjustSticker('right'));
+    stkForwardBtn.addEventListener('click', () => adjustSticker('forward'));
+    stkBackwardBtn.addEventListener('click', () => adjustSticker('backward'));
+    stkScaleUpBtn.addEventListener('click', () => adjustSticker('scale_up'));
+    stkScaleDownBtn.addEventListener('click', () => adjustSticker('scale_down'));
+    stkStretchXPlus.addEventListener('click', () => adjustSticker('stretch_x_plus'));
+    stkStretchXMinus.addEventListener('click', () => adjustSticker('stretch_x_minus'));
+    stkStretchYPlus.addEventListener('click', () => adjustSticker('stretch_y_plus'));
+    stkStretchYMinus.addEventListener('click', () => adjustSticker('stretch_y_minus'));
+
+    stickerHappyBtn.addEventListener('click', () => applyFaceSticker('bfdi_happy'));
+    stickerShockBtn.addEventListener('click', () => applyFaceSticker('bfdi_shock'));
+    stickerAngryBtn.addEventListener('click', () => applyFaceSticker('bfdi_angry'));
+    stickerCuteBtn.addEventListener('click', () => applyFaceSticker('cute'));
+    stickerRemoveBtn.addEventListener('click', () => applyFaceSticker('remove'));
+
     const savedApiKey = localStorage.getItem('gemini_api_key');
-    if (savedApiKey) apiKeyInput.value = savedApiKey;
+    if (savedApiKey) {
+      apiKeyInput.value = savedApiKey;
+    }
+
     apiKeyInput.addEventListener('change', () => {
       localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
     });
 
+    // Handle Front View Image
     imageInputFront.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -677,249 +1575,272 @@
       uploadedImagePreviewFront.src = '';
     });
 
+    // Handle Side View Image
+    imageInputSide.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target.result;
+        uploadedImagePreviewSide.src = result;
+        uploadedPreviewContainerSide.style.display = 'flex';
+
+        const match = result.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        if (match) {
+          sideImageMimeType = match[1];
+          sideImageBase64 = match[2];
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    removeImageBtnSide.addEventListener('click', () => {
+      imageInputSide.value = '';
+      sideImageBase64 = null;
+      sideImageMimeType = null;
+      uploadedPreviewContainerSide.style.display = 'none';
+      uploadedImagePreviewSide.src = '';
+    });
+
     function setStatus(state, message) {
       appStatus.setAttribute('data-status', state);
       appStatus.textContent = `Status: ${message}`;
     }
 
-    // 4. เรนเดอร์ 3D Blueprint Interactive Visualization
-    function renderBlueprintScene(bp) {
-      while (blueprintGroup.children.length > 0) {
-        const obj = blueprintGroup.children[0];
-        disposeObject(obj);
-        blueprintGroup.remove(obj);
-      }
-
-      const dims = bp.spatial_and_scale?.estimated_real_world_dimensions_meters || { x: 0.5, y: 0.5, z: 0.5 };
-      const dimX = Math.max(parseFloat(dims.x) || 0.5, 0.05);
-      const dimY = Math.max(parseFloat(dims.y) || 0.5, 0.05);
-      const dimZ = Math.max(parseFloat(dims.z) || 0.5, 0.05);
-
-      viewportDimText.textContent = `Dimensions: ${dimX.toFixed(2)}m (X) × ${dimY.toFixed(2)}m (Y) × ${dimZ.toFixed(2)}m (Z)`;
-
-      // A. Bounding Wireframe Box (Spatial Cage)
-      const boxGeom = new THREE.BoxGeometry(dimX, dimY, dimZ);
-      const edges = new THREE.EdgesGeometry(boxGeom);
-      const boxLine = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 }));
-      boxLine.position.set(0, dimY / 2, 0);
-      blueprintGroup.add(boxLine);
-
-      // B. Anchor Point Marker Gizmo
-      const anchorGeom = new THREE.SphereGeometry(Math.min(dimX, dimY, dimZ) * 0.08, 16, 16);
-      const anchorMat = new THREE.MeshBasicMaterial({ color: 0xef4444, wireframe: true });
-      const anchorMesh = new THREE.Mesh(anchorGeom, anchorMat);
-      anchorMesh.position.set(0, 0, 0);
-      blueprintGroup.add(anchorMesh);
-
-      // C. PBR Material Preview Shader Ball
-      const primaryLayer = bp.pbr_material_specifications?.material_layers?.[0] || {};
-      const hexPalette = primaryLayer.albedo_color_hex_palette || ['#38bdf8'];
-      const baseColorHex = hexPalette[0] || '#38bdf8';
-
-      let roughVal = 0.5;
-      if (typeof primaryLayer.roughness_distribution === 'string') {
-        const rMatch = primaryLayer.roughness_distribution.match(/([0-9]*[.]?[0-9]+)/);
-        if (rMatch) roughVal = parseFloat(rMatch[1]);
-      }
-
-      let metalVal = 0.0;
-      if (typeof primaryLayer.metallic_value === 'string') {
-        const mMatch = primaryLayer.metallic_value.match(/([0-9]*[.]?[0-9]+)/);
-        if (mMatch) metalVal = parseFloat(mMatch[1]);
-      } else if (typeof primaryLayer.metallic_value === 'number') {
-        metalVal = primaryLayer.metallic_value;
-      }
-
-      const shaderBallRadius = Math.min(dimX, dimY, dimZ) * 0.35;
-      const shaderBallGeom = new THREE.SphereGeometry(shaderBallRadius, 64, 48);
-      const shaderBallMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(baseColorHex),
-        roughness: THREE.MathUtils.clamp(roughVal, 0.0, 1.0),
-        metalness: THREE.MathUtils.clamp(metalVal, 0.0, 1.0),
-      });
-
-      const shaderBall = new THREE.Mesh(shaderBallGeom, shaderBallMat);
-      shaderBall.position.set(0, dimY / 2, 0);
-      shaderBall.castShadow = true;
-      shaderBall.receiveShadow = true;
-      blueprintGroup.add(shaderBall);
-
-      // D. Symmetry Plane (ถ้ามี)
-      const symmetryAxis = bp.spatial_and_scale?.symmetry_axis || 'None';
-      if (symmetryAxis.toUpperCase().includes('X') || symmetryAxis.toUpperCase().includes('Z')) {
-        const planeGeom = new THREE.PlaneGeometry(dimX * 1.2, dimY * 1.2);
-        const planeMat = new THREE.MeshBasicMaterial({
-          color: 0x0284c7,
-          transparent: true,
-          opacity: 0.15,
-          side: THREE.DoubleSide
-        });
-        const symPlane = new THREE.Mesh(planeGeom, planeMat);
-        symPlane.position.set(0, dimY / 2, 0);
-        if (symmetryAxis.toUpperCase().includes('X')) {
-          symPlane.rotation.y = Math.PI / 2;
-        }
-        blueprintGroup.add(symPlane);
-      }
-
-      fitCameraToObject(blueprintGroup);
-    }
-
-    // 5. แสดงข้อมูลใน Dashboard
-    function updateDashboardUI(bp) {
-      bpSubject.textContent = bp.entity_identification?.primary_subject || '-';
-      bpClassification.textContent = `${bp.entity_identification?.geometric_classification || '-'} (${bp.entity_identification?.style || 'photorealistic'})`;
-      
-      const dims = bp.spatial_and_scale?.estimated_real_world_dimensions_meters || {};
-      bpDimensions.textContent = `${dims.x || 0}m × ${dims.y || 0}m × ${dims.z || 0}m`;
-
-      bpSymmetry.textContent = `${bp.spatial_and_scale?.symmetry_axis || 'None'} / ${bp.spatial_and_scale?.anchor_point || '-'}`;
-
-      const poly = bp.geometry_reconstruction?.recommended_target_polycount || {};
-      bpLod0.textContent = poly.lod0_high_poly || '-';
-      bpLod1.textContent = poly.lod1_mobile_optimized || '-';
-
-      const mat = bp.pbr_material_specifications?.material_layers?.[0] || {};
-      bpRoughMetal.textContent = `Rough: ${mat.roughness_distribution || '-'} | Metal: ${mat.metallic_value ?? '-'}`;
-      bpNormal.textContent = mat.normal_depth_detail || '-';
-
-      // Swatches
-      bpPaletteContainer.innerHTML = '';
-      if (mat.albedo_color_hex_palette && Array.isArray(mat.albedo_color_hex_palette)) {
-        mat.albedo_color_hex_palette.forEach(hex => {
-          const chip = document.createElement('div');
-          chip.className = 'palette-chip';
-          chip.style.backgroundColor = hex;
-          chip.title = hex;
-          bpPaletteContainer.appendChild(chip);
-        });
-      }
-
-      // Prompts
-      bpDiffusionPrompt.textContent = bp.engine_generation_prompts?.triposr_or_nerf_diffusion_prompt || '-';
-      bpNegativePrompt.textContent = bp.engine_generation_prompts?.negative_prompt || '-';
-
-      blueprintDashboard.style.display = 'flex';
-    }
-
-    // Clipboard Copy
-    copyDiffusionBtn.addEventListener('click', () => {
-      if (!currentBlueprint?.engine_generation_prompts?.triposr_or_nerf_diffusion_prompt) return;
-      navigator.clipboard.writeText(currentBlueprint.engine_generation_prompts.triposr_or_nerf_diffusion_prompt);
-      copyDiffusionBtn.textContent = '✓ คัดลอกแล้ว';
-      setTimeout(() => copyDiffusionBtn.textContent = 'คัดลอก', 2000);
-    });
-
-    copyNegativeBtn.addEventListener('click', () => {
-      if (!currentBlueprint?.engine_generation_prompts?.negative_prompt) return;
-      navigator.clipboard.writeText(currentBlueprint.engine_generation_prompts.negative_prompt);
-      copyNegativeBtn.textContent = '✓ คัดลอกแล้ว';
-      setTimeout(() => copyNegativeBtn.textContent = 'คัดลอก', 2000);
-    });
-
-    // 6. SYSTEM PROMPT สำหรับ Photogrammetry Pipeline Architect
     const SYSTEM_PROMPT = `
-You are an expert 3D Computer Vision and Photogrammetry Pipeline Architect.
-Your role is to analyze a single user-provided 2D reference image and generate an exhaustive, mathematically precise technical specification to feed into an automated high-resolution 3D reconstruction engine (Mesh Generation, PBR Material Baking, and Topology Optimization).
+You are "PolyMorph 3D Master Sculptor" — an elite Procedural 3D Geometry and High-Fidelity Character Modeling Engine.
+Your core mission is to construct FULL VOLUMETRIC 3D DIGITAL FIGURINES (Vinyl toy / Pixar / CGI quality) from 2D images or text.
 
-### OBJECTIVES:
-1. Deconstruct the image's physical geometry, bounding dimensions, symmetry, and spatial depth.
-2. Define physically accurate PBR (Physically Based Rendering) texture maps (Albedo, Normal, Roughness, Metallic, Ambient Occlusion, Height/Displacement).
-3. Produce structured, machine-parsable JSON output strictly following the schema.
+STRICT DESIGN MANDATES:
+1. NEVER CREATE FLAT 2D CARDBOARD CUTOUTS OR FLAT PLAQUES:
+   - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, volumetric compound forms, organic tapered lobes).
+   - An object must have substantial 360-degree volume: depth (Z-axis) must be proportional to width (X-axis) and height (Y-axis), typically depth >= 0.75 * width!
+2. HIGH PART DENSITY & MICRO-DETAILS:
+   - Do not settle for 5-10 simple pieces. Produce an intricate, high-fidelity character composed of 30 to 70 distinct parts.
+   - Sculpt detailed facial expressions: curved eye sockets, layered eyeballs (sclera + pupils + highlight glint spheres), expressive 3D spline mouth ("tube"), cheeks, and brow contours.
+   - Ensure facial features have their local Z-coordinates positioned well proud of the surface so they never clip inside the body.
 
-### GUIDELINES:
-- **Photorealism Focus**: Detail micro-surface imperfections (e.g., pore roughness, scratches, surface curvature).
-- **Topology Target**: Clean quad-dominant topology, suitable for mobile rendering (LOD0: 50k-100k polys, LOD1: 10k-20k polys).
-- **Strict Format**: Return ONLY valid raw JSON. Do not include introductory text, explanations, or markdown code fences outside the JSON.
+OUTPUT FORMAT REQUIREMENTS:
+- Output ONLY valid, raw JSON matching the schema below.
+- NEVER wrap in markdown blocks like \`\`\`json. Output clean JSON only.
+- No conversational text or markdown explanation.
 
-Output the result in the following JSON structure:
+JSON SCHEMA:
 {
-  "entity_identification": {
-    "primary_subject": "Detailed name/category of the object",
-    "style": "photorealistic",
-    "geometric_classification": "Organic / Hard Surface / Hybrid"
-  },
-  "spatial_and_scale": {
-    "estimated_real_world_dimensions_meters": { "x": 0.0, "y": 0.0, "z": 0.0 },
-    "symmetry_axis": "X / Y / Z / None",
-    "anchor_point": "Base center / Center of mass"
-  },
-  "geometry_reconstruction": {
-    "base_primitive_decomposition": ["Array of geometric foundations"],
-    "critical_edge_loops": ["Key silhouette definitions and topological contours"],
-    "displacement_features": "Sub-surface variations, ridges, chamfers, bevel radius in mm",
-    "recommended_target_polycount": {
-      "lod0_high_poly": "e.g., 80,000 tris",
-      "lod1_mobile_optimized": "e.g., 15,000 tris"
+  "objects": [
+    {
+      "id": "unique_string_id",
+      "parent": "parent_id_or_null",
+      "type": "box" | "cylinder" | "sphere" | "cone" | "torus" | "capsule" | "lathe" | "extrude" | "tube" | "plane" | "dodecahedron" | "icosahedron",
+      "parameters": {
+        // box: "width": float, "height": float, "depth": float
+        // cylinder: "radiusTop": float, "radiusBottom": float, "height": float, "radialSegments": int
+        // sphere: "radius": float, "widthSegments": int, "heightSegments": int
+        // cone: "radius": float, "height": float, "radialSegments": int
+        // torus: "radius": float, "tube": float, "radialSegments": int, "tubularSegments": int
+        // capsule: "radius": float, "length": float
+        // lathe: "points": [[x, y], ...], "segments": int
+        // extrude: "shape": [[x, y], ...], "depth": float, "bevelEnabled": bool, "bevelThickness": float, "bevelSize": float, "bevelSegments": int
+        // tube: "path": [[x, y, z], ...], "radius": float, "tubularSegments": int, "closed": bool
+        // plane: "width": float, "height": float
+        // dodecahedron / icosahedron: "radius": float
+      },
+      "position": [x, y, z],
+      "rotation": [rotX, rotY, rotZ],
+      "scale": [scaleX, scaleY, scaleZ],
+      "color": "#hexcode",
+      "metalness": float_0_to_1,
+      "roughness": float_0_to_1
     }
-  },
-  "pbr_material_specifications": {
-    "material_layers": [
-      {
-        "layer_name": "Main body / Surface",
-        "albedo_color_hex_palette": ["#...", "#..."],
-        "roughness_distribution": "0.0 (mirror) to 1.0 (chalk) with map details",
-        "metallic_value": "0.0 (dielectric) to 1.0 (pure metal)",
-        "normal_depth_detail": "Micro-surface normals (e.g., fabric weave, brushed metal, skin pores)",
-        "subsurface_scattering": { "enabled": true/false, "scatter_radius": "mm if applicable" }
-      }
-    ]
-  },
-  "engine_generation_prompts": {
-    "triposr_or_nerf_diffusion_prompt": "Ultra-detailed, front-side-back multi-view diffusion prompt describing the object in neutral studio lighting, 8k resolution, photorealistic Unreal Engine 5 render style.",
-    "negative_prompt": "low poly, blurry, cartoon, flat shading, distorted geometry, floating artifacts, noise"
-  }
+  ]
 }
+
+==================================================
+MODE 1: VOLUMETRIC RECONSTRUCTION FROM 2D IMAGES
+==================================================
+1. SCULPTING IN TRUE ROUNDED 3D:
+   - Identify main mass: use "sphere" or "capsule" with scale [sx, sy, sz] to establish a round, plump, tactile core.
+   - For organic / flame / creature heads: build the silhouette using intersecting 3D curved shapes so it is thick, rounded, and attractive from front, side, and back!
+2. MULTI-VIEW RECONCILIATION:
+   - If both Front and Side views are given, match both silhouettes into a single coherent 3D sculpture.
+   - If only Front view is given, invent the natural depth (Z-thickness) assuming a plush toy or vinyl figurine proportions.
+3. DETAILED FACIAL FEATURES:
+   - Eyes: curved spheres or beveled discs anchored to the front contour with parent="head" or "body".
+   - Limbs: smooth 3D splines ("tube") with natural bend angles.
+
+==================================================
+MODE 2: 3D FROM TEXT PROMPT
+==================================================
+1. Construct organic creatures with rich volume, lively posture, and tactile materials.
+2. Ground contact: Lowest feet or base resting near Y = 0. Center of mass centered at X = 0, Z = 0.
+
+==================================================
+MODE 3: ITERATIVE REFINEMENT & POSE
+==================================================
+1. Retain existing geometry and object IDs when making modifications, only updating targeted properties or appending new accessories.
+2. For pose requests (Stand, Run, Sit, Wave): adjust rotations of joints and limb parts naturally while keeping anatomy intact.
 `;
 
-    // 7. กระบวนการส่งคำขอไปยัง Gemini API
-    analyzeBtn.addEventListener('click', async () => {
+    generateBtn.addEventListener('click', async () => {
       const apiKey = apiKeyInput.value.trim();
-      const customPrompt = promptInput.value.trim();
+      const prompt = promptInput.value.trim();
 
       if (!apiKey) {
         setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
         return;
       }
 
-      if (!frontImageBase64) {
-        setStatus('error', 'กรุณาอัปโหลดรูปภาพอ้างอิง 2D เพื่อทำการวิเคราะห์');
+      if (!prompt && !frontImageBase64 && !sideImageBase64 && !currentSpec) {
+        setStatus('error', 'กรุณาระบุคำอธิบายโมเดล 3D หรืออัปโหลดรูปภาพ 2D');
         return;
       }
 
-      setStatus('generating', 'AI กำลังวิเคราะห์รูปทรงเรขาคณิต, สัดส่วนกายภาพ และคุณสมบัติวัสดุ PBR...');
-      analyzeBtn.disabled = true;
-      exportJsonBtn.disabled = true;
+      setStatus('generating', currentSpec ? 'กำลังส่งคำสั่งปรับปรุงโมเดลเดิมไปยัง Gemini...' : 'Connecting to Gemini API...');
+      generateBtn.disabled = true;
       snapPngBtn.disabled = true;
+      undoBtn.disabled = true;
+      resetBtn.disabled = true;
+      exportBtn.disabled = true;
+      poseButtons.forEach(btn => btn.disabled = true);
+      stickerButtons.forEach(btn => btn.disabled = true);
+      downloadLink.style.display = 'none';
+      previewContainer.style.display = 'none';
 
-      // ล็อกการเรียกใช้โมเดลเป็น gemini-3.5-flash-lite เท่านั้น
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
 
-      const userInstruction = `
-User Prompt / Custom Request: 
-"${customPrompt || 'None'}"
+      const parts = [];
 
-Analyze the attached image and generate a complete high-fidelity 3D modeling Blueprint according to the strict JSON schema.
-`;
-
-      const parts = [
-        {
+      if (frontImageBase64) {
+        parts.push({
           inline_data: {
             mime_type: frontImageMimeType || 'image/jpeg',
             data: frontImageBase64
           }
-        },
-        {
-          text: userInstruction
+        });
+      }
+
+      if (sideImageBase64) {
+        parts.push({
+          inline_data: {
+            mime_type: sideImageMimeType || 'image/jpeg',
+            data: sideImageBase64
+          }
+        });
+      }
+
+      let userText = '';
+      let actionLabel = '';
+
+      if (currentSpec) {
+        actionLabel = prompt || 'ปรับปรุงรายละเอียดโมเดลเพิ่มเติม';
+        userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nUSER ITERATIVE MODIFICATION INSTRUCTION:\n${actionLabel}\n\nIMPORTANT: Maintain full 3D volumetric roundness, rich micro-details, and existing object IDs. Output the full updated JSON.`;
+      } else {
+        if (frontImageBase64 && sideImageBase64) {
+          actionLabel = prompt ? `แปลงภาพ Multi-View (หน้า+ข้าง) + ${prompt}` : 'แปลงภาพ Multi-View (หน้า+ข้าง) เป็น 3D Model';
+          userText = `วิเคราะห์ภาพอ้างอิง 2 มุมมอง (Front + Side): ปั้นโมเดลเป็นทรง 3D หนา อวบอ้วนรอบทิศทาง (Full Volumetric 3D Sculpting) ห้ามทำเป็นแผ่นแบน ปั้นรายละเอียดหน้าตา แขนขา และอวัยวะให้มีมิติลึกซ้อนชั้นระดับไฮเอนด์ ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
+        } else if (frontImageBase64) {
+          actionLabel = prompt ? `แปลงภาพ 2D (หน้า) + ${prompt}` : 'แปลงรูปภาพ 2D เป็น 3D Model';
+          userText = `วิเคราะห์รูปภาพ 2D นี้: เปลี่ยนตัวละครในภาพให้กลายเป็นฟิกเกอร์ 3D เต็มตัวที่มีความหนา อ้วนกลมมนรอบทิศทาง (Full 360-degree Volume) ห้ามทำเป็นแผ่นแบน Extrude แผ่นเดียว ปั้นสรีระส่วนโค้งเว้าด้วยรูปทรงกลม/แคปซูล/ท่อโค้งซ้อนกันอย่างประณีต ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
+        } else if (sideImageBase64) {
+          actionLabel = prompt ? `แปลงภาพ 2D (ข้าง) + ${prompt}` : 'แปลงรูปภาพมุมข้าง 2D เป็น 3D Model';
+          userText = `วิเคราะห์รูปภาพมุมข้าง 2D นี้: ดึงโครงสร้างสรีระและความหนาแกน Z ของวัตถุหลักออกมาเป็นทรง 3D รอบทิศทาง ${prompt ? `\n\nคำสั่งหรือรายละเอียดเพิ่มเติม: ${prompt}` : ''}`;
+        } else {
+          actionLabel = prompt;
+          userText = `สร้างโมเดล 3D คุณภาพสูงที่มีมิติความหนา อวบอิ่มรอบทิศทาง รายละเอียดครบถ้วน: ${prompt}`;
         }
-      ];
+      }
+
+      parts.push({ text: userText });
 
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: parts }],
+            contents: [
+              {
+                parts: parts
+              }
+            ],
+            systemInstruction: {
+              parts: [{ text: SYSTEM_PROMPT }]
+            },
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.1
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!rawText) {
+          throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
+        }
+
+        const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+        const specData = JSON.parse(sanitizedText);
+        
+        currentSpec = specData;
+        promptSession.push(actionLabel);
+        modelHistory.push({
+          spec: JSON.parse(JSON.stringify(specData)),
+          session: [...promptSession]
+        });
+
+        renderModel(specData);
+        promptInput.value = '';
+        
+        setStatus('ready', promptSession.length > 1 ? `ปรับปรุงโมเดลเรียบร้อย (ขั้นตอนที่ ${promptSession.length})` : 'สร้างโมเดล 3D สำเร็จเรียบร้อย');
+      } catch (err) {
+        setStatus('error', 'เกิดข้อผิดพลาด: ' + err.message);
+      } finally {
+        generateBtn.disabled = false;
+        resetBtn.disabled = false;
+        updateActionButtonsState();
+        updateHistoryUI();
+        updateUndoButtonState();
+      }
+    });
+
+    // ฟังก์ชันสั่งจัดท่าทางผ่าน Smart Pose Library
+    async function applySmartPose(poseName, poseInstruction) {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) {
+        setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
+        return;
+      }
+      if (!currentSpec) {
+        setStatus('error', 'ต้องสร้างโมเดล 3D ก่อนจึงจะจัดท่าทางได้');
+        return;
+      }
+
+      setStatus('generating', `AI กำลังคำนวณการจัดท่าทาง: ${poseName}...`);
+      generateBtn.disabled = true;
+      snapPngBtn.disabled = true;
+      undoBtn.disabled = true;
+      resetBtn.disabled = true;
+      exportBtn.disabled = true;
+      poseButtons.forEach(btn => btn.disabled = true);
+      stickerButtons.forEach(btn => btn.disabled = true);
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
+
+      const userText = `CURRENT ACTIVE 3D MODEL JSON:\n${JSON.stringify(currentSpec)}\n\nKINEMATIC POSE ADJUSTMENT REQUEST:\nPose: "${poseName}".\nInstruction: ${poseInstruction}\n\nSTRICT INSTRUCTIONS: Adjust ONLY the "rotation" and local "position" of joint and limb child parts (arms, elbows, legs, head) to form this pose anatomically. Do NOT change colors, geometries, or delete existing object IDs. Output the full updated JSON.`;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userText }] }],
             systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
             generationConfig: {
               responseMimeType: "application/json",
@@ -938,164 +1859,116 @@ Analyze the attached image and generate a complete high-fidelity 3D modeling Blu
         if (!rawText) throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
 
         const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-        const blueprintData = JSON.parse(sanitizedText);
+        const specData = JSON.parse(sanitizedText);
 
-        currentBlueprint = blueprintData;
-        renderBlueprintScene(blueprintData);
-        updateDashboardUI(blueprintData);
-
-        exportJsonBtn.disabled = false;
-        snapPngBtn.disabled = false;
-        setStatus('ready', `วิเคราะห์สำเร็จ: ${blueprintData.entity_identification?.primary_subject || '3D Blueprint พร้อมใช้งาน'}`);
-      } catch (err) {
-        setStatus('error', 'การวิเคราะห์ล้มเหลว: ' + err.message);
-      } finally {
-        analyzeBtn.disabled = false;
-      }
-    });
-
-    // 8. การส่งออกข้อมูลและการบันทึกภาพ
-    exportJsonBtn.addEventListener('click', () => {
-      if (!currentBlueprint) return;
-      const jsonStr = JSON.stringify(currentBlueprint, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `3d-blueprint-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setStatus('ready', 'ดาวน์โหลดไฟล์ 3D Blueprint JSON เรียบร้อยแล้ว');
-    });
-
-    snapPngBtn.addEventListener('click', () => {
-      renderer.render(scene, camera);
-      const dataUrl = renderer.domElement.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `3d-blueprint-viewport-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setStatus('ready', 'บันทึกภาพ 3D Viewport เรียบร้อยแล้ว');
-    });
-
-    // 9. ระบบกล้อง AR
-    async function startCamera() {
-      try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false
+        currentSpec = specData;
+        const actionLabel = `จัดท่าทาง: ${poseName}`;
+        promptSession.push(actionLabel);
+        modelHistory.push({
+          spec: JSON.parse(JSON.stringify(specData)),
+          session: [...promptSession]
         });
-        cameraFeed.srcObject = cameraStream;
-        await cameraFeed.play();
-        cameraFeed.style.display = 'block';
 
-        scene.background = null;
-        renderer.setClearColor(0x000000, 0);
-        gridHelper.visible = false;
-
-        isCameraMode = true;
-        cameraToggleBtn.textContent = '❌ ปิดกล้องจริง';
-        cameraToggleBtn.classList.add('active-camera');
-        cameraSnapBtn.style.display = 'inline-block';
-        setStatus('ready', 'เปิดกล้องสภาพแวดล้อมจริงแล้ว นำโมเดลเทียบสัดส่วนกับโลกจริงได้ทันที');
+        renderModel(specData);
+        setStatus('ready', `จัดท่าทาง "${poseName}" สำเร็จเรียบร้อย`);
       } catch (err) {
-        setStatus('error', 'ไม่สามารถเปิดกล้องได้: ' + err.message);
+        setStatus('error', 'จัดท่าทางล้มเหลว: ' + err.message);
+      } finally {
+        generateBtn.disabled = false;
+        resetBtn.disabled = false;
+        updateActionButtonsState();
+        updateHistoryUI();
+        updateUndoButtonState();
       }
     }
 
-    function stopCamera() {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
-      }
-      cameraFeed.srcObject = null;
-      cameraFeed.style.display = 'none';
-
-      scene.background = new THREE.Color(0x0b0f19);
-      renderer.setClearColor(0x0b0f19, 1);
-      gridHelper.visible = true;
-
-      isCameraMode = false;
-      cameraToggleBtn.textContent = '📷 โหมดกล้องจริง';
-      cameraToggleBtn.classList.remove('active-camera');
-      cameraSnapBtn.style.display = 'none';
-      setStatus('idle', 'ปิดโหมดกล้องจริงแล้ว');
-    }
-
-    cameraToggleBtn.addEventListener('click', () => {
-      if (!isCameraMode) startCamera();
-      else stopCamera();
+    poseStandBtn.addEventListener('click', () => {
+      applySmartPose('ยืนตรง (Stand)', 'Return character limbs into a natural, balanced upright standing pose.');
     });
 
-    cameraSnapBtn.addEventListener('click', () => {
-      if (!cameraFeed || !cameraFeed.videoWidth) return;
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-
-      const captureCanvas = document.createElement('canvas');
-      captureCanvas.width = width;
-      captureCanvas.height = height;
-      const ctx = captureCanvas.getContext('2d');
-
-      const vWidth = cameraFeed.videoWidth;
-      const vHeight = cameraFeed.videoHeight;
-      const videoAspect = vWidth / vHeight;
-      const containerAspect = width / height;
-
-      let sx = 0, sy = 0, sWidth = vWidth, sHeight = vHeight;
-      if (videoAspect > containerAspect) {
-        sHeight = vHeight;
-        sWidth = vHeight * containerAspect;
-        sx = (vWidth - sWidth) / 2;
-        sy = 0;
-      } else {
-        sWidth = vWidth;
-        sHeight = vWidth / containerAspect;
-        sx = 0;
-        sy = (vHeight - sHeight) / 2;
-      }
-
-      ctx.drawImage(cameraFeed, sx, sy, sWidth, sHeight, 0, 0, width, height);
-      renderer.render(scene, camera);
-      ctx.drawImage(renderer.domElement, 0, 0, width, height);
-
-      const dataUrl = captureCanvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `ar-schematic-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      setStatus('ready', 'บันทึกภาพ AR Schematic เรียบร้อย');
+    poseRunBtn.addEventListener('click', () => {
+      applySmartPose('ท่าวิ่ง (Run)', 'Adjust arms and legs into a dynamic athletic running pose with arms swinging opposite to legs, knees bent, torso leaning forward.');
     });
 
-    // 10. รีเซ็ตระบบทั้งหมด
+    poseSitBtn.addEventListener('click', () => {
+      applySmartPose('ท่านั่ง (Sit)', 'Bend hip joints and thighs forward 90 degrees and knees down 90 degrees, lowering the character root so it looks seated.');
+    });
+
+    poseWaveBtn.addEventListener('click', () => {
+      applySmartPose('โบกมือทักทาย (Wave)', 'Raise one arm upward with elbow bent, palm facing forward waving to the viewer, head tilted friendly.');
+    });
+
+    undoBtn.addEventListener('click', () => {
+      if (modelHistory.length > 1) {
+        modelHistory.pop();
+        const prevState = modelHistory[modelHistory.length - 1];
+        currentSpec = JSON.parse(JSON.stringify(prevState.spec));
+        promptSession = [...prevState.session];
+        
+        renderModel(currentSpec);
+        downloadLink.style.display = 'none';
+        setStatus('ready', `ย้อนกลับไปยังทรงก่อนหน้าเรียบร้อย (ขั้นตอนที่ ${promptSession.length})`);
+        
+        updateActionButtonsState();
+        updateHistoryUI();
+        updateUndoButtonState();
+      }
+    });
+
     resetBtn.addEventListener('click', () => {
-      currentBlueprint = null;
+      currentSpec = null;
+      promptSession = [];
+      modelHistory.length = 0;
+
+      deselectPart();
       promptInput.value = '';
+      
       imageInputFront.value = '';
       frontImageBase64 = null;
       frontImageMimeType = null;
       uploadedPreviewContainerFront.style.display = 'none';
       uploadedImagePreviewFront.src = '';
-      blueprintDashboard.style.display = 'none';
-      viewportDimText.textContent = 'Dimension: Waiting for image analysis...';
 
-      exportJsonBtn.disabled = true;
-      snapPngBtn.disabled = true;
+      imageInputSide.value = '';
+      sideImageBase64 = null;
+      sideImageMimeType = null;
+      uploadedPreviewContainerSide.style.display = 'none';
+      uploadedImagePreviewSide.src = '';
 
-      while (blueprintGroup.children.length > 0) {
-        const obj = blueprintGroup.children[0];
+      previewContainer.style.display = 'none';
+      downloadLink.style.display = 'none';
+
+      while (modelGroup.children.length > 0) {
+        const obj = modelGroup.children[0];
         disposeObject(obj);
-        blueprintGroup.remove(obj);
+        modelGroup.remove(obj);
       }
       renderer.render(scene, camera);
-      setStatus('idle', 'ล้างข้อมูลและพิมพ์เขียวทั้งหมดเรียบร้อยแล้ว');
+
+      updateActionButtonsState();
+      updateHistoryUI();
+      updateUndoButtonState();
+      setStatus('idle', 'ล้างข้อมูลโมเดลและคำสั่งเรียบร้อย เริ่มต้นใหม่ได้ทันที');
+    });
+
+    exportBtn.addEventListener('click', () => {
+      deselectPart();
+      setStatus('generating', 'กำลังสร้างไฟล์ GLB...');
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        modelGroup,
+        (glb) => {
+          const blob = new Blob([glb], { type: 'model/gltf-binary' });
+          const url = URL.createObjectURL(blob);
+          downloadLink.href = url;
+          downloadLink.style.display = 'block';
+          setStatus('ready', 'Export สำเร็จ! กดดาวน์โหลดไฟล์ด้านล่าง');
+        },
+        (error) => {
+          setStatus('error', 'Export error: ' + error.message);
+        },
+        { binary: true }
+      );
     });
 
     setTimeout(updateViewport, 100);

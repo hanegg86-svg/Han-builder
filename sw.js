@@ -1,4 +1,4 @@
-const CACHE_NAME = 'photogrammetry-architect-v1';
+const CACHE_NAME = 'agent-3d-builder-v22';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
