@@ -95,6 +95,12 @@
     #refine-details-btn:hover:not(:disabled) {
       background: #7c3aed;
     }
+    #polish-stage3-btn {
+      background: #ec4899;
+    }
+    #polish-stage3-btn:hover:not(:disabled) {
+      background: #db2777;
+    }
     #snap-png-btn {
       background: #6366f1;
     }
@@ -636,6 +642,7 @@
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="refine-details-btn" data-testid="refine-details-btn" disabled>✨ เจาะลึกดีเทลระดับ Micro (Stage 2 Pass)</button>
+    <button id="polish-stage3-btn" data-testid="polish-stage3-btn" disabled>🔮 ขัดเกลาความละเอียดขั้นสุด (Stage 3 Polish Pass)</button>
     <button id="snap-png-btn" data-testid="snap-png-btn" disabled>📸 เซฟรูปภาพโมเดล (PNG)</button>
     <button id="undo-btn" data-testid="undo-btn" disabled>↩️ ย้อนกลับทรงก่อนหน้า</button>
     <button id="reset-btn" data-testid="reset-btn">🧹 ล้างคำสั่ง / เริ่มโมเดลใหม่</button>
@@ -1063,6 +1070,7 @@
     const promptInput = document.getElementById('prompt-input');
     const generateBtn = document.getElementById('generate-btn');
     const refineDetailsBtn = document.getElementById('refine-details-btn');
+    const polishStage3Btn = document.getElementById('polish-stage3-btn');
     const snapPngBtn = document.getElementById('snap-png-btn');
     const undoBtn = document.getElementById('undo-btn');
     const resetBtn = document.getElementById('reset-btn');
@@ -1136,6 +1144,7 @@
     function updateActionButtonsState() {
       const hasModel = currentSpec !== null;
       refineDetailsBtn.disabled = !hasModel;
+      polishStage3Btn.disabled = !hasModel;
       poseButtons.forEach(btn => btn.disabled = !hasModel);
       stickerButtons.forEach(btn => btn.disabled = !hasModel);
       snapPngBtn.disabled = !hasModel;
@@ -1825,6 +1834,7 @@ JSON SCHEMA:
       setStatus('generating', currentSpec ? 'กำลังส่งคำสั่งปรับปรุงโมเดลเดิมไปยัง Gemini...' : 'Connecting to Gemini API...');
       generateBtn.disabled = true;
       refineDetailsBtn.disabled = true;
+      polishStage3Btn.disabled = true;
       snapPngBtn.disabled = true;
       undoBtn.disabled = true;
       resetBtn.disabled = true;
@@ -1945,6 +1955,7 @@ JSON SCHEMA:
       setStatus('generating', 'AI กำลังวิเคราะห์รูปภาพและเจาะลึกดีเทลระดับ Micro (Stage 2 Pass)...');
       generateBtn.disabled = true;
       refineDetailsBtn.disabled = true;
+      polishStage3Btn.disabled = true;
       snapPngBtn.disabled = true;
       undoBtn.disabled = true;
       resetBtn.disabled = true;
@@ -2042,6 +2053,120 @@ Refine this 3D model into an ultra-clean, cute, volumetric 3D character figurine
       }
     });
 
+    // ปุ่ม Stage 3: ขัดเกลาความละเอียดขั้นสุด (Hyper-Detailing & Material Polish Pass)
+    polishStage3Btn.addEventListener('click', async () => {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) {
+        setStatus('error', 'กรุณาระบุ Gemini API Key ก่อน');
+        return;
+      }
+      if (!currentSpec) {
+        setStatus('error', 'ต้องสร้างโมเดล 3D ก่อนจึงจะขัดเกลาขั้นสุดได้');
+        return;
+      }
+
+      setStatus('generating', 'AI กำลังขัดเกลาเนื้อวัสดุและประกายแววตาขั้นสุด (Stage 3 Polish Pass)...');
+      generateBtn.disabled = true;
+      refineDetailsBtn.disabled = true;
+      polishStage3Btn.disabled = true;
+      snapPngBtn.disabled = true;
+      undoBtn.disabled = true;
+      resetBtn.disabled = true;
+      exportBtn.disabled = true;
+      poseButtons.forEach(btn => btn.disabled = true);
+      stickerButtons.forEach(btn => btn.disabled = true);
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
+
+      const parts = [];
+
+      if (frontImageBase64) {
+        parts.push({
+          inline_data: {
+            mime_type: frontImageMimeType || 'image/jpeg',
+            data: frontImageBase64
+          }
+        });
+      }
+
+      if (sideImageBase64) {
+        parts.push({
+          inline_data: {
+            mime_type: sideImageMimeType || 'image/jpeg',
+            data: sideImageBase64
+          }
+        });
+      }
+
+      const userText = `CURRENT ACTIVE 3D MODEL (STAGE 2 RESULT):
+${JSON.stringify(currentSpec)}
+
+STAGE 3 HYPER-DETAILING & MATERIAL POLISH PASS MANDATE:
+Perform an elite Master Figurine polish pass on this character model to achieve studio vinyl figurine quality!
+1. MATERIAL DIFFERENTIATION & POLISH:
+   - Tune "roughness", "metalness", and "clearcoat" per anatomical part:
+     * Eyes / Sclera / Pupils: clearcoat = 1.0, roughness = 0.05 (glossy glass/resin reflections).
+     * Duck bill / Beak / Claws: clearcoat = 0.4, roughness = 0.3 (polished tactile finish).
+     * Main Body & Head Skin: clearcoat = 0.0, roughness = 0.85 (soft matte velvety vinyl).
+2. HYPER-DETAILS & SPECULAR GLINTS:
+   - Add micro specular reflection glints to the eyes (tiny white spheres parented to the pupils offset slightly on Z).
+   - Finesse beak nostrils or mouth seam contours if appropriate.
+   - Refine the 3 hair strands so they have organic tapered thickness and distinct directional spread.
+3. ANTI-CLIPPING & CLEAN SILHOUETTE:
+   - Ensure all sub-features are cleanly grounded or parented without internal z-fighting or clipping.
+   - DO NOT alter core body anatomy or delete primary IDs.
+   - Output the COMPLETE final polished JSON containing all objects.`;
+
+      parts.push({ text: userText });
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: parts }],
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.1
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error('ไม่พบข้อมูลตอบกลับจากโมเดล');
+
+        const sanitizedText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+        const specData = JSON.parse(sanitizedText);
+
+        currentSpec = specData;
+        const actionLabel = `🔮 ขัดเกลาความละเอียดขั้นสุด (Stage 3 Polish Pass)`;
+        promptSession.push(actionLabel);
+        modelHistory.push({
+          spec: JSON.parse(JSON.stringify(specData)),
+          session: [...promptSession],
+          stickerState: currentStickerState ? JSON.parse(JSON.stringify(currentStickerState)) : null
+        });
+
+        renderModel(specData);
+        setStatus('ready', `ขัดเกลาความละเอียดขั้นสุดสำเร็จ! (ชิ้นส่วนรวม: ${specData.objects.length} ชิ้น)`);
+      } catch (err) {
+        setStatus('error', 'ขัดเกลาระดับที่ 3 ล้มเหลว: ' + err.message);
+      } finally {
+        generateBtn.disabled = false;
+        resetBtn.disabled = false;
+        updateActionButtonsState();
+        updateHistoryUI();
+        updateUndoButtonState();
+      }
+    });
+
     // ฟังก์ชันสั่งจัดท่าทางผ่าน Smart Pose Library
     async function applySmartPose(poseName, poseInstruction) {
       const apiKey = apiKeyInput.value.trim();
@@ -2057,6 +2182,7 @@ Refine this 3D model into an ultra-clean, cute, volumetric 3D character figurine
       setStatus('generating', `AI กำลังคำนวณการจัดท่าทาง: ${poseName}...`);
       generateBtn.disabled = true;
       refineDetailsBtn.disabled = true;
+      polishStage3Btn.disabled = true;
       snapPngBtn.disabled = true;
       undoBtn.disabled = true;
       resetBtn.disabled = true;
