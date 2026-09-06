@@ -679,16 +679,26 @@
       console.warn('CSG library not loaded, falling back to standard hierarchy:', err);
     }
 
-    // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
+    // 1. ลงทะเบียน Service Worker พร้อมระบบตรวจจับอัปเดตและรีเฟรชหน้าเว็บอัตโนมัติ
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then((registration) => {
             console.log('ServiceWorker registered with scope:', registration.scope);
+            // บังคับเช็คไฟล์อัปเดตบนเซิร์ฟเวอร์ทันทีที่เปิดหน้าเว็บ
+            registration.update();
           })
           .catch((error) => {
             console.error('ServiceWorker registration failed:', error);
           });
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload(); // รีโหลดหน้าเว็บอัตโนมัติเมื่อติดตั้ง Service Worker ตัวใหม่สำเร็จ
+          }
+        });
       });
     }
 
@@ -1967,7 +1977,6 @@ JSON SCHEMA:
 
       const parts = [];
 
-      // แนบภาพต้นฉบับเข้าไปด้วยเสมอ เพื่อให้ AI มีสายตามองเห็นงานจริง
       if (frontImageBase64) {
         parts.push({
           inline_data: {
