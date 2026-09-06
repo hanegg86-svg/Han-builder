@@ -836,7 +836,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อมรองรับ CSG Boolean
+    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อมรองรับ CSG Boolean และสติ๊กเกอร์คงสถานะ
     function renderModel(spec) {
       deselectPart();
 
@@ -847,7 +847,7 @@
       }
 
       const stickerPanel = document.getElementById('sticker-adjust-panel');
-      if (stickerPanel) stickerPanel.style.display = 'none';
+      if (stickerPanel && !currentStickerState) stickerPanel.style.display = 'none';
 
       if (!spec.objects || !Array.isArray(spec.objects)) return;
 
@@ -1019,7 +1019,6 @@
                 targetMesh.geometry.dispose();
                 targetMesh.geometry = csgResult.geometry;
 
-                // หากเป็น Subtract หรือ Intersect ให้ซ่อนเครื่องมือเจาะเพื่อโชว์รอยคว้าน
                 if (opType === 'subtract' || opType === 'intersect') {
                   toolMesh.visible = false;
                   toolMesh.userData.isCutter = true;
@@ -1030,6 +1029,11 @@
             }
           }
         });
+      }
+
+      // Step 3: ประกอบสติ๊กเกอร์หน้าตากลับคืนอัตโนมัติหากมีสถานะอยู่
+      if (currentStickerState && currentStickerState.type) {
+        applyFaceSticker(currentStickerState.type, true);
       }
 
       fitCameraToObject(modelGroup);
@@ -1117,6 +1121,7 @@
     let promptSession = [];
     const modelHistory = [];
     let selectedMesh = null;
+    let currentStickerState = null; // จดจำสถานะสติ๊กเกอร์ { type, position, scale }
 
     let frontImageBase64 = null;
     let frontImageMimeType = null;
@@ -1132,7 +1137,7 @@
       exportBtn.disabled = !hasModel;
 
       const hasSticker = modelGroup.getObjectByName('face_sticker') !== null;
-      if (!hasSticker && stickerAdjustPanel) {
+      if (!hasSticker && stickerAdjustPanel && !currentStickerState) {
         stickerAdjustPanel.style.display = 'none';
       }
     }
@@ -1536,7 +1541,8 @@
       return c;
     }
 
-    function applyFaceSticker(type) {
+    // ฟังก์ชันแปะสติกเกอร์หน้าตา พร้อมคงค่าพิกัด/สเกลที่ปรับแต่งไว้
+    function applyFaceSticker(type, isRestoring = false) {
       if (!currentSpec) {
         setStatus('error', 'กรุณาสร้างโมเดล 3D ก่อนจึงจะแปะสติกเกอร์หน้าตาได้');
         return;
@@ -1549,6 +1555,7 @@
       }
 
       if (type === 'remove') {
+        currentStickerState = null;
         stickerAdjustPanel.style.display = 'none';
         setStatus('ready', 'ลบสติกเกอร์หน้าตาเรียบร้อย');
         updatePreviewSnapshot();
@@ -1584,11 +1591,25 @@
       stickerMesh.name = 'face_sticker';
       stickerMesh.userData = { id: 'face_sticker' };
 
-      stickerMesh.position.set(center.x, center.y + size.y * 0.35, box.max.z + 0.03);
-      modelGroup.add(stickerMesh);
+      // นำตำแหน่งและสเกลเดิมกลับมาใส่ หรือตั้งค่าเริ่มต้นถ้าเป็นการแปะใหม่
+      if (isRestoring && currentStickerState && currentStickerState.position && currentStickerState.scale) {
+        stickerMesh.position.set(currentStickerState.position.x, currentStickerState.position.y, currentStickerState.position.z);
+        stickerMesh.scale.set(currentStickerState.scale.x, currentStickerState.scale.y, currentStickerState.scale.z);
+      } else {
+        stickerMesh.position.set(center.x, center.y + size.y * 0.35, box.max.z + 0.03);
+        currentStickerState = {
+          type: type,
+          position: { x: stickerMesh.position.x, y: stickerMesh.position.y, z: stickerMesh.position.z },
+          scale: { x: stickerMesh.scale.x, y: stickerMesh.scale.y, z: stickerMesh.scale.z }
+        };
+      }
 
+      modelGroup.add(stickerMesh);
       stickerAdjustPanel.style.display = 'flex';
-      setStatus('ready', `แปะสติกเกอร์หน้าตาแล้ว! ปรับเลื่อนหรือย่อขยายที่แผงใต้ช่อง API Key ได้ทันที`);
+
+      if (!isRestoring) {
+        setStatus('ready', `แปะสติกเกอร์หน้าตาแล้ว! ปรับเลื่อนหรือย่อขยายที่แผงใต้ช่อง API Key ได้ทันที`);
+      }
       updatePreviewSnapshot();
     }
 
@@ -1624,6 +1645,12 @@
         sticker.scale.y *= 1.1;
       } else if (action === 'stretch_y_minus') {
         sticker.scale.y *= 0.9;
+      }
+
+      // บันทึกสถานะพิกัดและขนาดล่าสุดเข้า currentStickerState
+      if (currentStickerState) {
+        currentStickerState.position = { x: sticker.position.x, y: sticker.position.y, z: sticker.position.z };
+        currentStickerState.scale = { x: sticker.scale.x, y: sticker.scale.y, z: sticker.scale.z };
       }
 
       updatePreviewSnapshot();
@@ -1884,7 +1911,8 @@ JSON SCHEMA:
         promptSession.push(actionLabel);
         modelHistory.push({
           spec: JSON.parse(JSON.stringify(specData)),
-          session: [...promptSession]
+          session: [...promptSession],
+          stickerState: currentStickerState ? JSON.parse(JSON.stringify(currentStickerState)) : null
         });
 
         renderModel(specData);
@@ -1968,7 +1996,8 @@ Perform an intensive Micro-Detailing and CSG Sculpting pass on this character!
         promptSession.push(actionLabel);
         modelHistory.push({
           spec: JSON.parse(JSON.stringify(specData)),
-          session: [...promptSession]
+          session: [...promptSession],
+          stickerState: currentStickerState ? JSON.parse(JSON.stringify(currentStickerState)) : null
         });
 
         renderModel(specData);
@@ -2041,7 +2070,8 @@ Perform an intensive Micro-Detailing and CSG Sculpting pass on this character!
         promptSession.push(actionLabel);
         modelHistory.push({
           spec: JSON.parse(JSON.stringify(specData)),
-          session: [...promptSession]
+          session: [...promptSession],
+          stickerState: currentStickerState ? JSON.parse(JSON.stringify(currentStickerState)) : null
         });
 
         renderModel(specData);
@@ -2080,6 +2110,9 @@ Perform an intensive Micro-Detailing and CSG Sculpting pass on this character!
         currentSpec = JSON.parse(JSON.stringify(prevState.spec));
         promptSession = [...prevState.session];
         
+        // กู้คืนสถานะสติ๊กเกอร์ของจุดย้อนกลับ
+        currentStickerState = prevState.stickerState ? JSON.parse(JSON.stringify(prevState.stickerState)) : null;
+
         renderModel(currentSpec);
         downloadLink.style.display = 'none';
         setStatus('ready', `ย้อนกลับไปยังทรงก่อนหน้าเรียบร้อย (ขั้นตอนที่ ${promptSession.length})`);
@@ -2094,6 +2127,11 @@ Perform an intensive Micro-Detailing and CSG Sculpting pass on this character!
       currentSpec = null;
       promptSession = [];
       modelHistory.length = 0;
+      currentStickerState = null; // ล้างสถานะสติ๊กเกอร์ทั้งหมด
+
+      if (stickerAdjustPanel) {
+        stickerAdjustPanel.style.display = 'none';
+      }
 
       deselectPart();
       promptInput.value = '';
