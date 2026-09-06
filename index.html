@@ -647,6 +647,7 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     // 1. ลงทะเบียน Service Worker สำหรับรองรับการติดตั้งแอป (PWA)
     if ('serviceWorker' in navigator) {
@@ -661,7 +662,30 @@
       });
     }
 
-    // 2. การตั้งค่า Three.js Scene พร้อม preserveDrawingBuffer และ alpha สำหรับพื้นหลังโปร่งใส
+    // ฟังก์ชันสร้าง Procedural Micro-Surface Noise Texture สำหรับเพิ่มความลึกและรายละเอียดระดับไมโคร
+    function createMicroNoiseTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.createImageData(128, 128);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const val = Math.floor(Math.random() * 45 + 210);
+        imgData.data[i] = val;
+        imgData.data[i + 1] = val;
+        imgData.data[i + 2] = val;
+        imgData.data[i + 3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(6, 6);
+      return texture;
+    }
+    const microNoiseTexture = createMicroNoiseTexture();
+
+    // 2. การตั้งค่า Three.js Scene พร้อม Realistic Lighting, Tone Mapping, Soft Shadows และ IBL Environment
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -671,8 +695,18 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // เงาตกกระทบนุ่มนวลสมจริง
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; // การเกลี่ยเฉดสีระดับฟิล์มฮอลลีวูด
+    renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
+
+    // การสร้าง IBL Radiance Map ด้วย RoomEnvironment
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnv = new RoomEnvironment();
+    scene.environment = pmremGenerator.fromScene(roomEnv, 0.04).texture;
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -693,21 +727,34 @@
       }
     });
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 0.4);
     hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    // Key Light - ไฟหลักความละเอียดเงาสูง
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.25);
     dirLight.position.set(10, 15, 10);
     dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 35;
+    dirLight.shadow.bias = -0.0001;
+    dirLight.shadow.radius = 2.5;
     scene.add(dirLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    // Fill Light - ไฟเติมเงาด้านหน้า
+    const fillLight = new THREE.DirectionalLight(0xffeedd, 0.65);
     fillLight.position.set(0, 2, 10);
     scene.add(fillLight);
+
+    // Rim / Backlight - ไฟส่องขอบเน้นรูปทรง (Silhouette) ให้ลอยเด่น
+    const rimLight = new THREE.DirectionalLight(0x60a5fa, 0.9);
+    rimLight.position.set(-8, 10, -8);
+    scene.add(rimLight);
 
     const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
     scene.add(gridHelper);
@@ -862,10 +909,10 @@
           const extrudeSettings = {
             depth: p.depth !== undefined ? p.depth : 0.35,
             bevelEnabled: p.bevelEnabled !== undefined ? p.bevelEnabled : true,
-            bevelSegments: p.bevelSegments || 6,
+            bevelSegments: p.bevelSegments || 8,
             steps: 2,
-            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.05,
-            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.05
+            bevelSize: p.bevelSize !== undefined ? p.bevelSize : 0.06,
+            bevelThickness: p.bevelThickness !== undefined ? p.bevelThickness : 0.06
           };
           geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         } else if (item.type === 'tube') {
@@ -893,6 +940,8 @@
             color: item.color || '#cccccc',
             metalness: item.metalness !== undefined ? item.metalness : 0.05,
             roughness: item.roughness !== undefined ? item.roughness : 0.65,
+            bumpMap: microNoiseTexture, // ผิวสัมผัสแบบ Micro-surface Noise
+            bumpScale: 0.0025,
             side: item.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide
           });
 
@@ -1617,9 +1666,14 @@ STRICT DESIGN MANDATES:
    - Even if the input is a 2D cartoon (such as Firey, Pin, Leafy, or anime characters), you MUST sculpt them into FULL ROUNDED 3D VOLUMES (spheres, capsules, volumetric compound forms, organic tapered lobes).
    - An object must have substantial 360-degree volume: depth (Z-axis) must be proportional to width (X-axis) and height (Y-axis), typically depth >= 0.75 * width!
 2. HIGH PART DENSITY & MICRO-DETAILS:
-   - Do not settle for 5-10 simple pieces. Produce an intricate, high-fidelity character composed of 30 to 70 distinct parts.
+   - Do not settle for 5-10 simple pieces. Produce an intricate, high-fidelity character composed of 45 to 80 distinct parts.
    - Sculpt detailed facial expressions: curved eye sockets, layered eyeballs (sclera + pupils + highlight glint spheres), expressive 3D spline mouth ("tube"), cheeks, and brow contours.
    - Ensure facial features have their local Z-coordinates positioned well proud of the surface so they never clip inside the body.
+3. CURVATURE & BEVEL PERFECTION:
+   - For any "extrude" geometry, ALWAYS set "bevelEnabled": true, "bevelSegments": 8, "bevelSize": 0.06, and "bevelThickness": 0.06 to guarantee smooth, rounded edges.
+   - For "lathe" and "cylinder" geometry, ensure smooth radialSegments (>= 48) to avoid low-poly facets.
+4. PBR MATERIAL DIFFERENTIATION:
+   - Assign varied roughness and metalness: eyes/glints should be glossy (roughness: 0.05-0.1), body vinyl/rubber (roughness: 0.45-0.65, metalness: 0.0-0.05), and metal buckles/joints (metalness: 0.8-1.0, roughness: 0.2-0.35).
 
 OUTPUT FORMAT REQUIREMENTS:
 - Output ONLY valid, raw JSON matching the schema below.
