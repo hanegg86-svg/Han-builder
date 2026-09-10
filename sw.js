@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agent-3d-builder-v33-import-glb';
+const CACHE_NAME = 'agent-3d-builder-v34-stage3-subparts';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

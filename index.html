@@ -648,7 +648,7 @@
 
     <button id="generate-btn" data-testid="generate-btn">Generate 3D</button>
     <button id="refine-details-btn" data-testid="refine-details-btn" disabled>✨ เจาะลึกดีเทลระดับ Micro (Stage 2 Pass)</button>
-    <button id="polish-stage3-btn" data-testid="polish-stage3-btn" disabled>🔮 ขัดเกลาความละเอียดขั้นสุด (Stage 3 Polish Pass)</button>
+    <button id="polish-stage3-btn" data-testid="polish-stage3-btn" disabled>🔮 ขัดเกลาและเพิ่มชิ้นส่วนย่อยขั้นสุด (Stage 3 Polish Pass)</button>
     <button id="snap-png-btn" data-testid="snap-png-btn" disabled>📸 เซฟรูปภาพโมเดล (PNG)</button>
     <button id="undo-btn" data-testid="undo-btn" disabled>↩️ ย้อนกลับทรงก่อนหน้า</button>
     <button id="reset-btn" data-testid="reset-btn">🧹 ล้างคำสั่ง / เริ่มโมเดลใหม่</button>
@@ -887,7 +887,7 @@
       previewContainer.style.display = 'flex';
     }
 
-    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อม Clay Texture
+    // 4. ฟังก์ชันสร้างโมเดล 3D แบบ High-Fidelity Geometry พร้อม Clay Texture และ Two-Pass Hierarchy Linking
     function renderModel(spec) {
       deselectPart();
 
@@ -904,7 +904,9 @@
 
       const objectMap = new Map();
       const booleanTasks = [];
+      const pendingHierarchy = [];
 
+      // Pass 1: สร้าง Geometry และ Mesh ทั้งหมด พร้อมเก็บเข้า Object Map
       spec.objects.forEach((item, index) => {
         let geometry;
         const p = item.parameters || {};
@@ -1033,11 +1035,16 @@
             }
           }
 
-          if (item.parent && objectMap.has(item.parent)) {
-            objectMap.get(item.parent).add(mesh);
-          } else {
-            modelGroup.add(mesh);
-          }
+          pendingHierarchy.push({ mesh, parentId: item.parent });
+        }
+      });
+
+      // Pass 2: ผูกความสัมพันธ์ Parent-Child อย่างสมบูรณ์ รองรับการสร้าง Sub-Parts ทุกรูปแบบ
+      pendingHierarchy.forEach(({ mesh, parentId }) => {
+        if (parentId && objectMap.has(parentId)) {
+          objectMap.get(parentId).add(mesh);
+        } else {
+          modelGroup.add(mesh);
         }
       });
 
@@ -2198,7 +2205,7 @@ Refine this 3D model with rich anatomical and structural secondary/tertiary micr
       }
     });
 
-    // ปุ่ม Stage 3: ขัดเกลาความละเอียดขั้นสุด (Universal Material Polish Pass)
+    // ปุ่ม Stage 3: ขัดเกลาความละเอียดขั้นสุด และสร้างชิ้นส่วนย่อย Micro-Sub-Components (Universal Material & Sub-Part Polish Pass)
     polishStage3Btn.addEventListener('click', async () => {
       const apiKey = apiKeyInput.value.trim();
       if (!apiKey) {
@@ -2210,7 +2217,7 @@ Refine this 3D model with rich anatomical and structural secondary/tertiary micr
         return;
       }
 
-      setStatus('generating', 'AI กำลังขัดเกลาเนื้อวัสดุและปรับแต่งความสมจริงขั้นสุด (Stage 3 Polish Pass)...');
+      setStatus('generating', 'AI กำลังขัดเกลาเนื้อวัสดุและสร้างชิ้นส่วนย่อย Micro-sub-parts เพิ่มความละเอียดขั้นสุด (Stage 3 Polish Pass)...');
       generateBtn.disabled = true;
       refineDetailsBtn.disabled = true;
       polishStage3Btn.disabled = true;
@@ -2246,20 +2253,27 @@ Refine this 3D model with rich anatomical and structural secondary/tertiary micr
       const userText = `CURRENT ACTIVE 3D MODEL (STAGE 2 RESULT):
 ${JSON.stringify(currentSpec)}
 
-STAGE 3 HYPER-DETAILING & MATERIAL POLISH PASS MANDATE:
-Perform an elite Master Finish pass on this 3D model to achieve photorealistic studio rendering!
-1. CONTEXTUAL MATERIAL POLISH:
-   - Identify each sub-part's authentic physical material and calibrate its shader values:
-     * Rubber soles / fabric mesh / tires: roughness = 0.85 to 0.95, clearcoat = 0.0, metalness = 0.0
-     * Glossy plastics / patent leather / car paint: roughness = 0.15 to 0.3, clearcoat = 0.7 to 1.0
-     * Metallic eyelets / chrome exhausts / metal hardware: metalness = 0.85 to 1.0, roughness = 0.1 to 0.25
-     * Glass / lenses / gemstone: roughness = 0.05, clearcoat = 1.0
-2. MICRO-ACCENTS:
-   - Add fine logo badges, lace tip aglets, reflector strips, seam contours, or subtle trim highlights.
-3. ANTI-CLIPPING & PERFECTION:
-   - Eliminate any internal mesh overlapping or z-fighting.
-   - DO NOT alter core silhouette proportions.
-   - Output the COMPLETE final polished JSON containing all objects.`;
+STAGE 3 HYPER-FIDELITY MICRO-SUB-COMPONENTS & MATERIAL POLISH MANDATE:
+Perform an elite Master Finish pass on this 3D model to achieve photorealistic studio quality by generating high-density micro-sub-components and calibrating PBR shaders!
+
+1. SUB-PART INJECTION & HIERARCHY (Generate 15 to 30 discrete micro-sub-components attached to parent parts):
+   - Every micro-sub-part MUST set "parent": "<parent_part_id>" to anchor firmly to its parent geometry in local coordinate space.
+   - Structural Seams & Stitching: Add micro "tube" or thin "torus" geometries along edges, panel splits, sole contours, or joint rims.
+   - Fasteners, Rivets & Hardware: Add tiny "cylinder", "sphere", or "torus" sub-parts for rivets, eyelets, screws, bolts, buttons, laces/buckles.
+   - Embossed Details & Badges: Add thin "roundedBox", "extrude", or "lathe" micro-plates for logos, labels, treads, grilles, or vents.
+   - Proportional Micro-Scale: Keep sub-parts in miniature scale (approx 5% - 15% of parent size), positioned flush on surface or slightly raised (+0.01 to +0.03 offset) to prevent z-fighting clipping.
+
+2. CONTEXTUAL MATERIAL CALIBRATION (MeshPhysicalMaterial contrast):
+   - Calibrate authentic physical material shaders so sub-parts contrast sharply with base surfaces:
+     * Rubber soles / fabric mesh / tires / matte skin: roughness = 0.85 to 0.95, clearcoat = 0.0, metalness = 0.0
+     * Glossy plastics / patent leather / car paint / eyes: roughness = 0.15 to 0.3, clearcoat = 0.7 to 1.0
+     * Metallic rivets / eyelets / chrome exhaust / metal buckles: metalness = 0.85 to 1.0, roughness = 0.1 to 0.25
+     * Glass / lenses / visor / gemstones: roughness = 0.05, clearcoat = 1.0, metalness = 0.1
+
+3. FOUNDATION PRESERVATION & ANTI-CLIPPING:
+   - Preserve all existing primary and secondary base part IDs; DO NOT distort core silhouette proportions.
+   - Sub-parts must be strictly object-appropriate (no creature parts on machines, no mechanical bolts on cute organic plushies).
+   - Output the COMPLETE final JSON containing all original base objects plus all newly created micro-sub-components.`;
 
       parts.push({ text: userText });
 
@@ -2290,7 +2304,7 @@ Perform an elite Master Finish pass on this 3D model to achieve photorealistic s
         const specData = JSON.parse(sanitizedText);
 
         currentSpec = specData;
-        const actionLabel = `🔮 ขัดเกลาความละเอียดขั้นสุด (Stage 3 Polish Pass)`;
+        const actionLabel = `🔮 ขัดเกลาและเพิ่มชิ้นส่วนย่อยขั้นสุด (Stage 3 Polish Pass)`;
         promptSession.push(actionLabel);
         modelHistory.push({
           spec: JSON.parse(JSON.stringify(specData)),
@@ -2299,7 +2313,7 @@ Perform an elite Master Finish pass on this 3D model to achieve photorealistic s
         });
 
         renderModel(specData);
-        setStatus('ready', `ขัดเกลาความละเอียดขั้นสุดสำเร็จ! (ชิ้นส่วนรวม: ${specData.objects.length} ชิ้น)`);
+        setStatus('ready', `ขัดเกลาความละเอียดขั้นสุดและเพิ่มชิ้นส่วนย่อยสำเร็จ! (ชิ้นส่วนรวม: ${specData.objects.length} ชิ้น)`);
       } catch (err) {
         setStatus('error', 'ขัดเกลาระดับที่ 3 ล้มเหลว: ' + err.message);
       } finally {
